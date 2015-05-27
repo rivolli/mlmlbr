@@ -63,7 +63,7 @@ runningClassifiers <- function (binarybase, kfoldmatrix, path) {
     testData <- data_preprocessed[testIdx,]
     labelIdx <- ncol(trainData)
     testData[,labelIdx] <- factor(testData[,labelIdx], levels=c("0","1"))
-   
+
     if (sum(table(trainData[,labelIdx]) > 0) < 2) {
       cat("_____ Skipping only a single class ______\n")
       next
@@ -131,7 +131,7 @@ runningClassifiers <- function (binarybase, kfoldmatrix, path) {
     #Running Decision Tree
     cat("      *" , classname, "- Decision Tree (", i, ")\n")
     formula <- as.formula(paste(classname, " ~ .", sep=""))
-    dt.model <- J48(formula, trainData)
+    dt.model <- RWeka::J48(formula, trainData) #Using RWeka:: prefix because whithout it, Running with mclapply doesnt work
     dt.probs <- predict(dt.model, testData[,-labelIdx], "probability")[,2]
     dt.result <- as.numeric(dt.probs>0.5)
 
