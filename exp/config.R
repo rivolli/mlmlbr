@@ -7,7 +7,7 @@
 library(mldr);
 library(pROC);
 library(ROCR);
-library(RWeka);
+#library(RWeka);
 library(kernlab);
 library(FNN);
 library(MASS);
@@ -26,7 +26,7 @@ FILES = list.files(
 );
 
 #number of cores
-CORES = 14;
+CORES = 2;
 
 #number of folds
 FOLDS = 10;
