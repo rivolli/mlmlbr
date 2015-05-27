@@ -5,10 +5,9 @@
 root <- function(file) {
   path <- get_filenames(file)
 
-  if (!file.exists(path$resultfile) && path$datasetname == "medical") {
+  if (!file.exists(path$resultfile) && path$datasetname == "yeast") {
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
-    browser();
     if (is_sparce_data(traindata)) {
       traindata <- fill_sparce_mldrdata(traindata)
     }
@@ -20,8 +19,8 @@ root <- function(file) {
     cat("  - Extract features for meta learning", now(), '\n')
     featurefile <- path$get_tempfile('features', '.RData')
     if (!file.exists(featurefile)) {
-      #features <- as.data.frame(do.call("rbind", mclapply(datasets, characterization, path, mc.cores=CORES)))
-      features <- as.data.frame(do.call("rbind", lapply(datasets, characterization, path)))
+      features <- as.data.frame(do.call("rbind", mclapply(datasets, characterization, path, mc.cores=CORES)))
+      #features <- as.data.frame(do.call("rbind", lapply(datasets, characterization, path)))
       save(features, file=featurefile)
     }
     else {
@@ -64,8 +63,9 @@ runningClassifiers <- function (binarybase, kfoldmatrix, path) {
     testData <- data_preprocessed[testIdx,]
     labelIdx <- ncol(trainData)
     testData[,labelIdx] <- factor(testData[,labelIdx], levels=c("0","1"))
-
-    if ( !(T %in% table(trainData[,labelIdx]) > 0) ) {
+   
+    if (sum(table(trainData[,labelIdx]) > 0) < 2) {
+      cat("_____ Skipping only a single class ______\n")
       next
     }
 
@@ -89,12 +89,12 @@ runningClassifiers <- function (binarybase, kfoldmatrix, path) {
     cat("      *" , classname, "- SVM (", i, ")\n")
     svmData <- as.matrix(trainData[,-labelIdx])
     rownames(svmData) <- NULL
-    if (T %in% table(trainData[,labelIdx]) > 1) { # Ha pelo menos 2 exemplos de cada classe, caso contrario o ksvm gera um erro
+    if (sum(table(trainData[,labelIdx]) > 1) == 2) { # Ha pelo menos 2 exemplos de cada classe, caso contrario o ksvm gera um erro
       svm.model <- ksvm(svmData, trainData[,labelIdx], prob.model=T)
       svm.probs <- predict(svm.model, testData[,-labelIdx], "probabilities")[,2]
       svm.result <- as.numeric(svm.probs>0.5)
     }
-    else if (T %in% table(trainData[,labelIdx]) > 0) {
+    else if (sum(table(trainData[,labelIdx]) > 0) == 1) {
       #Invalid result in ksvm: Nos proximos nao utilizar o ksvm
       svm.model <- svm(svmData, trainData[,labelIdx], probability=T)
       svm.result <- predict(svm.model, testData[,-labelIdx], probability = T)
@@ -140,7 +140,7 @@ runningClassifiers <- function (binarybase, kfoldmatrix, path) {
 
     #Running Random Forest
     cat("      *" , classname, "- Random Forest (", i, ")\n")
-    if (T %in% table(trainData[,labelIdx]) > 0) {
+    if (sum(table(trainData[,labelIdx]) > 0) >= 1) {
       rf.model <- randomForest(trainData[,-labelIdx], trainData[,labelIdx])
       rf.probs <- predict(rf.model, testData[,-labelIdx], "prob")[,2]
       rf.result <- as.numeric(rf.probs>0.5)
