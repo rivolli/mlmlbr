@@ -19,7 +19,7 @@ root <- function(file) {
     cat("  - Extract features for meta learning", now(), '\n')
     featurefile <- path$get_tempfile('features', '.RData')
     if (!file.exists(featurefile)) {
-      features <- as.data.frame(do.call("rbind", mclapply(datasets, characterization, path, mc.cores=CORES)))
+      features <- as.data.frame(do.call("rbind", mclapply(datasets, characterization, path, mc.cores=min(CORES, length(datasets)))))
       #features <- as.data.frame(do.call("rbind", lapply(datasets, characterization, path)))
       save(features, file=featurefile)
     }
@@ -31,8 +31,8 @@ root <- function(file) {
     #Runing K-Fold
     set.seed(traindata$measures$num.instances);
     kfoldmatrix <- get_kfoldsIndexes(traindata, 10);
-    #results <- mclapply(datasets, runningClassifiers, kfoldmatrix, path, mc.cores=CORES)
-    results <- lapply(datasets, runningClassifiers, kfoldmatrix, path)
+    results <- mclapply(datasets, runningClassifiers, kfoldmatrix, path, mc.cores=min(CORES, length(datasets)))
+    #results <- lapply(datasets, runningClassifiers, kfoldmatrix, path)
     save(results, file=path$get_rdatafile('details'))
 
     methods <- unlist(lapply(results, function (kpart) kpart$auc))
