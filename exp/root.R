@@ -5,13 +5,16 @@
 root <- function(file) {
   path <- get_filenames(file)
 
-  if (!file.exists(path$resultfile) && path$datasetname == "medical") {
+  if (!file.exists(path$resultfile) && path$datasetname == "tmc2007-500") {
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     if (is_sparce_data(traindata)) {
       traindata <- fill_sparce_mldrdata(traindata)
     }
 
+    #remove unique columns
+    traindata <- remove_unique_attributes(traindata)
+    
     #Break in L datasets for Binary Relevance
     datasets <- lapply(mldr_transform(traindata), convertClassColumn)
 

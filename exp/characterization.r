@@ -688,7 +688,7 @@ characterization <- function(data, path) {
         return(characresult)
     }
 
-    cat("characterization: ", colnames(data)[length(data)] , "\n");
+    cat("   = characterization: ", colnames(data)[length(data)] , now(), "\n");
     characresult = combine(compute_grouped_meta_features(data));
     characresult = as.numeric(characresult);
     #"Node", "Leave", "NodeAtr", "NodeIns", "LeafCor", "LMin", "LMax", "LMean", "LSd", "BMin", "BMax", "BMean", "BSd", "AtrMin", "AtrMax", "AtrMean", "AtrSd",

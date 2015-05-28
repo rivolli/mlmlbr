@@ -30,7 +30,7 @@ fill_sparce_mldrdata <- function (mdata) {
     col
   }))
 
-  mldr_from_dataframe(dataset, mdata$labels$index, names(mdata$attributes))
+  mldr_from_dataframe(dataset, mdata$labels$index, mdata$name)
 }
 
 #Remove unique attributes and Remove empty class
@@ -46,6 +46,6 @@ remove_unique_attributes <- function (mdata) {
       if (i %in% mdata$labels$index) clsIndex[length(clsIndex)+1] <- idx
     }
   }
-
-  mldr_from_dataframe(dataset, clsIndex, colnames(mdata$dataset[oldIndex]))
+  names(dataset) <- colnames(mdata$dataset[oldIndex])
+  mldr_from_dataframe(dataset, clsIndex, mdata$name)
 }
