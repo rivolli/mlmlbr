@@ -5,7 +5,7 @@
 root <- function(file) {
   path <- get_filenames(file)
 
-  if (!file.exists(path$resultfile) && path$datasetname == "bibtex") {
+  if (!file.exists(path$resultfile) && path$datasetname == "corel5k") {
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     if (is_sparce_data(traindata)) {
