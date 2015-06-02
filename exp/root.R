@@ -5,7 +5,7 @@
 root <- function(file) {
   path <- get_filenames(file)
 
-  if (!file.exists(path$resultfile) && path$datasetname == "medical") {
+  if (!file.exists(path$resultfile) ) { #&& path$datasetname == "medical") {
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     if (is_sparce_data(traindata)) {
@@ -40,7 +40,7 @@ root <- function(file) {
 
     methods <- unlist(lapply(results, function (kpart) kpart$auc))
     accuracy <- unlist(lapply(results, function (kpart) kpart$accuracy))
-    browser()
+
     write.csv(cbind(features, methods, accuracy), file=path$resultfile, row.names=FALSE)
     rm(path, traindata, results, kfoldmatrix, features)
   }
