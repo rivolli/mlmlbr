@@ -5,15 +5,15 @@
 root <- function(file) {
   path <- get_filenames(file)
 
-  if (!file.exists(path$resultfile) && path$datasetname == "enron") {
+  if (!file.exists(path$resultfile) && path$datasetname == "medical") {
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     if (is_sparce_data(traindata)) {
       traindata <- fill_sparce_mldrdata(traindata)
     }
 
-    #remove unique columns
-    traindata <- remove_unique_attributes(traindata)
+    #remove unique columns and labels with lower than 10 examples of each value
+    traindata <- remove_unique_attributes(traindata, 10) #this row may throw an error when all labels have lower than 10 values for each label
     
     #Break in L datasets for Binary Relevance
     datasets <- lapply(mldr_transform(traindata), convertClassColumn)
@@ -40,9 +40,12 @@ root <- function(file) {
 
     methods <- unlist(lapply(results, function (kpart) kpart$auc))
     accuracy <- unlist(lapply(results, function (kpart) kpart$accuracy))
+    browser()
     write.csv(cbind(features, methods, accuracy), file=path$resultfile, row.names=FALSE)
     rm(path, traindata, results, kfoldmatrix, features)
   }
+  cat("\ndone:", now(), "\n")
+  TRUE
 }
 
 #Runing classifiers

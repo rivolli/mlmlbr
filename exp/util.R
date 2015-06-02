@@ -33,19 +33,31 @@ fill_sparce_mldrdata <- function (mdata) {
   mldr_from_dataframe(dataset, mdata$labels$index, mdata$name)
 }
 
-#Remove unique attributes and Remove empty class
-remove_unique_attributes <- function (mdata) {
+#Remove unique attributes and Remove empty class with less than limitecls
+remove_unique_attributes <- function (mdata, limitecls=1) {
   dataset <- data.frame(row.names=1:mdata$measures$num.instances)
   oldIndex <- numeric(0)
   clsIndex <- numeric(0)
-  for (i in 1:mdata$measures$num.attributes) {
+  
+  #attributes
+  for (i in mdata$attributesIndexes) {
     if (length(unique(mdata$dataset[,i])) > 1) {
       idx <- length(oldIndex) + 1
       oldIndex[idx] <- i
       dataset <- cbind(dataset, mdata$dataset[,i])
-      if (i %in% mdata$labels$index) clsIndex[length(clsIndex)+1] <- idx
     }
   }
+  #labels
+  for (i in mdata$labels$index) {
+    #Test if there are at least two classes and if each them are at least limitecls values
+    if (length(unique(mdata$dataset[,i])) > 1 && all(table(mdata$dataset[,i]) > limitecls)) {
+      idx <- length(oldIndex) + 1
+      oldIndex[idx] <- i
+      dataset <- cbind(dataset, mdata$dataset[,i])
+      clsIndex[length(clsIndex)+1] <- idx
+    }
+  }
+  
   names(dataset) <- colnames(mdata$dataset[oldIndex])
   mldr_from_dataframe(dataset, clsIndex, mdata$name)
 }
