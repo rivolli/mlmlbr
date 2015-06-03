@@ -5,7 +5,7 @@
 root <- function(file) {
   path <- get_filenames(file)
 
-  if (!file.exists(path$resultfile) ) { #&& path$datasetname == "medical") {
+  if (!file.exists(path$resultfile) && path$datasetname == "tmc2007-500") { #) { #
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     if (is_sparce_data(traindata)) {
@@ -17,7 +17,7 @@ root <- function(file) {
     
     #Break in L datasets for Binary Relevance
     datasets <- lapply(mldr_transform(traindata), convertClassColumn)
-
+ 
     #Extract general features
     cat("  - Extract features for meta learning", now(), '\n')
     featurefile <- path$get_tempfile('features', '.RData')
@@ -34,6 +34,7 @@ root <- function(file) {
     #Runing K-Fold
     set.seed(traindata$measures$num.instances);
     kfoldmatrix <- get_kfoldsIndexes(traindata, 10);
+    
     results <- mclapply(datasets, runningClassifiers, kfoldmatrix, path, mc.cores=min(CORES, length(datasets)))
     #results <- lapply(datasets, runningClassifiers, kfoldmatrix, path)
     save(results, file=path$get_rdatafile('details'))
@@ -44,8 +45,6 @@ root <- function(file) {
     write.csv(cbind(features, methods, accuracy), file=path$resultfile, row.names=FALSE)
     rm(path, traindata, results, kfoldmatrix, features)
   }
-  cat("\ndone:", now(), "\n")
-  TRUE
 }
 
 #Runing classifiers
@@ -95,13 +94,14 @@ runningClassifiers <- function (binarybase, kfoldmatrix, path) {
     cat("      *" , classname, "- SVM (", i, ")\n")
     svmData <- as.matrix(trainData[,-labelIdx])
     rownames(svmData) <- NULL
-    if (sum(table(trainData[,labelIdx]) > 1) == 2) { # Ha pelo menos 2 exemplos de cada classe, caso contrario o ksvm gera um erro
-      svm.model <- ksvm(svmData, trainData[,labelIdx], prob.model=T)
-      svm.probs <- predict(svm.model, testData[,-labelIdx], "probabilities")[,2]
-      svm.result <- as.numeric(svm.probs>0.5)
-    }
-    else if (sum(table(trainData[,labelIdx]) > 0) == 1) {
-      #Invalid result in ksvm: Nos proximos nao utilizar o ksvm
+    #if (sum(table(trainData[,labelIdx]) > 1) == 2) { # Ha pelo menos 2 exemplos de cada classe, caso contrario o ksvm gera um erro
+    #  svm.model <- ksvm(svmData, trainData[,labelIdx], prob.model=T)
+    #  svm.probs <- predict(svm.model, testData[,-labelIdx], "probabilities")[,2]
+    #  svm.result <- as.numeric(svm.probs>0.5)
+    #}
+    #else if (sum(table(trainData[,labelIdx]) > 0) == 1) {
+    if (sum(table(trainData[,labelIdx]) > 0) == 1) {
+      #Invalid result in ksvm: Nos proximos experimentos nao utilizar o ksvm
       svm.model <- svm(svmData, trainData[,labelIdx], probability=T)
       svm.result <- predict(svm.model, testData[,-labelIdx], probability = T)
       svm.probs <- attr(svm.result, "probabilities")[,2]
