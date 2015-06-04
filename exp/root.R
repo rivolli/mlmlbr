@@ -5,7 +5,7 @@
 root <- function(file) {
   path <- get_filenames(file)
 
-  if (!file.exists(path$resultfile) && path$datasetname == "tmc2007-500") { #) { #
+  if (!file.exists(path$resultfile) ) { #&& path$datasetname == "tmc2007") { #
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     if (is_sparce_data(traindata)) {
@@ -100,7 +100,7 @@ runningClassifiers <- function (binarybase, kfoldmatrix, path) {
     #  svm.result <- as.numeric(svm.probs>0.5)
     #}
     #else if (sum(table(trainData[,labelIdx]) > 0) == 1) {
-    if (sum(table(trainData[,labelIdx]) > 0) == 1) {
+    if (sum(table(trainData[,labelIdx]) > 0) >= 1) {
       #Invalid result in ksvm: Nos proximos experimentos nao utilizar o ksvm
       svm.model <- svm(svmData, trainData[,labelIdx], probability=T)
       svm.result <- predict(svm.model, testData[,-labelIdx], probability = T)
