@@ -14,6 +14,9 @@ run = function() {
   lapply(FILES, function(file) {
     root(file);
   });
+  
+  cat("\ndone:", now(), "\n")
+  TRUE
 }
 
 run();
