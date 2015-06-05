@@ -59,7 +59,7 @@ runningClassifiers <- function (binarybase, kfoldmatrix, path) {
 
   totals <- list(BASELINE={}, KNN_1={}, KNN_3={}, KNN_5={}, KNN_7={}, SVM={}, NB={}, DT={}, RF={}) #, LM={}, LDA={}
   for (i in 1:nrow(kfoldmatrix)) {
-    cat("  - K-Fold", i, " - ", classname, now(), '\n')
+    #cat("  - K-Fold", i, " - ", classname, now(), '\n')
     trainIdx <- as.vector(kfoldmatrix[(i * -1),])
     trainIdx <- trainIdx[!is.na(trainIdx)]
     testIdx <- kfoldmatrix[i,!is.na(kfoldmatrix[i,])]
@@ -71,27 +71,30 @@ runningClassifiers <- function (binarybase, kfoldmatrix, path) {
 
     if (sum(table(trainData[,labelIdx]) > 0) < 2) {
       cat("_____ Skipping only a single class ______\n")
+      rm(trainIdx, testIdx, trainData, testData, labelIdx)
       next
     }
 
-    cat("  - BASELINE", i, " - ", classname, "\n")
+    #cat("  - BASELINE", i, " - ", classname, "\n")
     baseline.result <- rep(as.numeric(names(which.max(table(trainData[,labelIdx])))), nrow(testData))
     baseline.measures <- binary.evaluate.complete(baseline.result, testData[,labelIdx], baseline.result)
     totals$BASELINE <- rbind(totals$BASELINE, baseline.measures)
+    rm(baseline.result, baseline.measures)
 
     #Running KNN 1, 3, 5, 7
     for (k in seq(1, 7, 2)) {
        methodname <- paste('KNN', k, sep='_')
-       cat("      *" , classname,   " - ", methodname, "(", i, ")\n")
+       cat("      *", now(), classname, "-", methodname, "(", i, ")\n")
        knn.result <- knn(trainData[,-labelIdx], testData[,-labelIdx], trainData[,labelIdx], k, prob=T)
        knn.probs <- ifelse(knn.result == 0, 1-attr(knn.result, "prob"), attr(knn.result, "prob"))
 
        knn.measures <- binary.evaluate.complete(knn.result, testData[,labelIdx], knn.probs)
        totals[[methodname]] <- rbind(totals[[methodname]], knn.measures)
+       rm(knn.result, knn.probs, knn.measures)
     }
 
     #Running SVM
-    cat("      *" , classname, "- SVM (", i, ")\n")
+    cat("      *", now(), classname, "- SVM (", i, ")\n")
     svmData <- as.matrix(trainData[,-labelIdx])
     rownames(svmData) <- NULL
     #if (sum(table(trainData[,labelIdx]) > 1) == 2) { # Ha pelo menos 2 exemplos de cada classe, caso contrario o ksvm gera um erro
@@ -105,6 +108,7 @@ runningClassifiers <- function (binarybase, kfoldmatrix, path) {
       svm.model <- svm(svmData, trainData[,labelIdx], probability=T)
       svm.result <- predict(svm.model, testData[,-labelIdx], probability = T)
       svm.probs <- attr(svm.result, "probabilities")[,2]
+      rm(svm.model)
     }
     else {
       #Invalid result to ksvm and svm so complete result with 0 values
@@ -114,9 +118,10 @@ runningClassifiers <- function (binarybase, kfoldmatrix, path) {
     }
     svm.measures <- binary.evaluate.complete(svm.result, testData[,labelIdx], svm.probs)
     totals$SVM <- rbind(totals$SVM, svm.measures)
+    rm(svmData, svm.result, svm.probs, svm.measures)
 
     #Running NaiveBayes
-    cat("      *" , classname, "- Naive Bayes (", i, ")\n")
+    cat("      *", now(), classname, "- Naive Bayes (", i, ")\n")
     nb.model <- naiveBayes(trainData[,-labelIdx], trainData[,labelIdx], type="raw")
     nb.probs <- predict(nb.model, testData[,-labelIdx], "raw")[,2]
     nb.result <- as.numeric(nb.probs>0.5)
@@ -124,6 +129,7 @@ runningClassifiers <- function (binarybase, kfoldmatrix, path) {
     nb.measures <- binary.evaluate.complete(nb.result, testData[,labelIdx], nb.probs)
 
     totals$NB <- rbind(totals$NB, nb.measures)
+    rm(nb.model, nb.probs, nb.result, nb.measures)
 
     #Running Linear Discriminant Analysis
 #     lda.model <- lda(trainData[,-labelIdx], trainData[,labelIdx])
@@ -135,7 +141,7 @@ runningClassifiers <- function (binarybase, kfoldmatrix, path) {
 #     totals$LDA <- rbind(totals$LDA, lda.measures)
 
     #Running Decision Tree
-    cat("      *" , classname, "- Decision Tree (", i, ")\n")
+    cat("      *" , now(), classname, "- Decision Tree (", i, ")\n")
     formula <- as.formula(paste(classname, " ~ .", sep=""))
     dt.model <- RWeka::J48(formula, trainData) #Using RWeka:: prefix because whithout it, Running with mclapply doesnt work
     dt.probs <- predict(dt.model, testData[,-labelIdx], "probability")[,2]
@@ -143,13 +149,15 @@ runningClassifiers <- function (binarybase, kfoldmatrix, path) {
 
     dt.measures <- binary.evaluate.complete(dt.result, testData[,labelIdx], dt.probs)
     totals$DT <- rbind(totals$DT, dt.measures)
+    rm(formula, dt.model, dt.probs, dt.result, dt.measures)
 
     #Running Random Forest
-    cat("      *" , classname, "- Random Forest (", i, ")\n")
+    cat("      *", now(), classname, "- Random Forest (", i, ")\n")
     if (sum(table(trainData[,labelIdx]) > 0) >= 1) {
       rf.model <- randomForest(trainData[,-labelIdx], trainData[,labelIdx])
       rf.probs <- predict(rf.model, testData[,-labelIdx], "prob")[,2]
       rf.result <- as.numeric(rf.probs>0.5)
+      rm(rf.model)
     }
     else {
       #Invalid result to randomForest so complete result with 0 values
@@ -159,6 +167,9 @@ runningClassifiers <- function (binarybase, kfoldmatrix, path) {
     }
     rf.measures <- binary.evaluate.complete(rf.result, testData[,labelIdx], rf.probs)
     totals$RF <- rbind(totals$RF, rf.measures)
+    rm(rf.result, rf.probs, rf.measures)
+
+    rm(trainIdx, testIdx, trainData, testData, labelIdx)
   }
 
   if (is.list(totals$BASELINE)) {
@@ -174,6 +185,7 @@ runningClassifiers <- function (binarybase, kfoldmatrix, path) {
   }
   resultdata <- list(auc=methodauc, accuracy=methodacc, data=totals, summary=summary)
   save(resultdata, file=resultfile)
+  gc()
 
   resultdata
 }
