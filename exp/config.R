@@ -25,7 +25,7 @@ FILES = list.files(
 );
 
 #number of cores
-CORES = 15;
+CORES = 2;
 
 #number of folds
 FOLDS = 10;

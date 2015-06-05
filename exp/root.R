@@ -5,7 +5,7 @@
 root <- function(file) {
   path <- get_filenames(file)
 
-  if (!file.exists(path$resultfile) ) { #&& path$datasetname == "tmc2007") { #
+  if (!file.exists(path$resultfile) && path$datasetname == "flags") { # ) { #
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     if (is_sparce_data(traindata)) {
@@ -75,99 +75,31 @@ runningClassifiers <- function (binarybase, kfoldmatrix, path) {
       next
     }
 
-    #cat("  - BASELINE", i, " - ", classname, "\n")
-    baseline.result <- rep(as.numeric(names(which.max(table(trainData[,labelIdx])))), nrow(testData))
-    baseline.measures <- binary.evaluate.complete(baseline.result, testData[,labelIdx], baseline.result)
-    totals$BASELINE <- rbind(totals$BASELINE, baseline.measures)
-    rm(baseline.result, baseline.measures)
-
+    cat("      *", now(), classname, "- BASELINE (", i, ")\n")
+    totals$BASELINE <- rbind(totals$BASELINE, get_baseline_measures(trainData, testData, labelIdx))
+    
     #Running KNN 1, 3, 5, 7
     for (k in seq(1, 7, 2)) {
        methodname <- paste('KNN', k, sep='_')
        cat("      *", now(), classname, "-", methodname, "(", i, ")\n")
-       knn.result <- knn(trainData[,-labelIdx], testData[,-labelIdx], trainData[,labelIdx], k, prob=T)
-       knn.probs <- ifelse(knn.result == 0, 1-attr(knn.result, "prob"), attr(knn.result, "prob"))
-
-       knn.measures <- binary.evaluate.complete(knn.result, testData[,labelIdx], knn.probs)
-       totals[[methodname]] <- rbind(totals[[methodname]], knn.measures)
-       rm(knn.result, knn.probs, knn.measures)
+       totals[[methodname]] <- rbind(totals[[methodname]], get_knn_measures(trainData, testData, labelIdx, k))       
     }
 
     #Running SVM
     cat("      *", now(), classname, "- SVM (", i, ")\n")
-    svmData <- as.matrix(trainData[,-labelIdx])
-    rownames(svmData) <- NULL
-    #if (sum(table(trainData[,labelIdx]) > 1) == 2) { # Ha pelo menos 2 exemplos de cada classe, caso contrario o ksvm gera um erro
-    #  svm.model <- ksvm(svmData, trainData[,labelIdx], prob.model=T)
-    #  svm.probs <- predict(svm.model, testData[,-labelIdx], "probabilities")[,2]
-    #  svm.result <- as.numeric(svm.probs>0.5)
-    #}
-    #else if (sum(table(trainData[,labelIdx]) > 0) == 1) {
-    if (sum(table(trainData[,labelIdx]) > 0) >= 1) {
-      #Invalid result in ksvm: Nos proximos experimentos nao utilizar o ksvm
-      svm.model <- svm(svmData, trainData[,labelIdx], probability=T)
-      svm.result <- predict(svm.model, testData[,-labelIdx], probability = T)
-      svm.probs <- attr(svm.result, "probabilities")[,2]
-      rm(svm.model)
-    }
-    else {
-      #Invalid result to ksvm and svm so complete result with 0 values
-      cat("________ Invalid traindata to SVM classifier ________\n")
-      svm.result <- rep(2, length(testIdx)) #All values are wrong
-      svm.probs <- rep(0, length(testIdx)) #All probabilites are 0
-    }
-    svm.measures <- binary.evaluate.complete(svm.result, testData[,labelIdx], svm.probs)
-    totals$SVM <- rbind(totals$SVM, svm.measures)
-    rm(svmData, svm.result, svm.probs, svm.measures)
+    totals$SVM <- rbind(totals$SVM, get_svm_measures(trainData, testData, labelIdx, testIdx))
 
     #Running NaiveBayes
     cat("      *", now(), classname, "- Naive Bayes (", i, ")\n")
-    nb.model <- naiveBayes(trainData[,-labelIdx], trainData[,labelIdx], type="raw")
-    nb.probs <- predict(nb.model, testData[,-labelIdx], "raw")[,2]
-    nb.result <- as.numeric(nb.probs>0.5)
-
-    nb.measures <- binary.evaluate.complete(nb.result, testData[,labelIdx], nb.probs)
-
-    totals$NB <- rbind(totals$NB, nb.measures)
-    rm(nb.model, nb.probs, nb.result, nb.measures)
-
-    #Running Linear Discriminant Analysis
-#     lda.model <- lda(trainData[,-labelIdx], trainData[,labelIdx])
-#     lda.pred <- predict(lda.model, testData[,-labelIdx])
-#     lda.result <- lda.pred$class
-#     lda.probs <- lda.pred$posterior[,2]
-#
-#     lda.measures <- binary.evaluate.complete(lda.result, testData[,labelIdx], lda.probs)
-#     totals$LDA <- rbind(totals$LDA, lda.measures)
+    totals$NB <- rbind(totals$NB, get_naivebayes_measures(trainData, testData, labelIdx))
 
     #Running Decision Tree
     cat("      *" , now(), classname, "- Decision Tree (", i, ")\n")
-    formula <- as.formula(paste(classname, " ~ .", sep=""))
-    dt.model <- RWeka::J48(formula, trainData) #Using RWeka:: prefix because whithout it, Running with mclapply doesnt work
-    dt.probs <- predict(dt.model, testData[,-labelIdx], "probability")[,2]
-    dt.result <- as.numeric(dt.probs>0.5)
-
-    dt.measures <- binary.evaluate.complete(dt.result, testData[,labelIdx], dt.probs)
-    totals$DT <- rbind(totals$DT, dt.measures)
-    rm(formula, dt.model, dt.probs, dt.result, dt.measures)
+    totals$DT <- rbind(totals$DT, get_decisiontree_measures(trainData, testData, labelIdx, classname))
 
     #Running Random Forest
     cat("      *", now(), classname, "- Random Forest (", i, ")\n")
-    if (sum(table(trainData[,labelIdx]) > 0) >= 1) {
-      rf.model <- randomForest(trainData[,-labelIdx], trainData[,labelIdx])
-      rf.probs <- predict(rf.model, testData[,-labelIdx], "prob")[,2]
-      rf.result <- as.numeric(rf.probs>0.5)
-      rm(rf.model)
-    }
-    else {
-      #Invalid result to randomForest so complete result with 0 values
-      cat("________ Invalid traindata to randomForest classifier ________\n")
-      rf.result <- rep(2, length(testIdx)) #All values are wrong
-      rf.probs <- rep(0, length(testIdx)) #All probabilites are 0
-    }
-    rf.measures <- binary.evaluate.complete(rf.result, testData[,labelIdx], rf.probs)
-    totals$RF <- rbind(totals$RF, rf.measures)
-    rm(rf.result, rf.probs, rf.measures)
+    totals$RF <- rbind(totals$RF, get_randomforest_measures(trainData, testData, labelIdx, testIdx))
 
     rm(trainIdx, testIdx, trainData, testData, labelIdx)
   }
