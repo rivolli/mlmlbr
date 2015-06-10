@@ -42,11 +42,13 @@ root <- function(file) {
       save(results, file=resultfile)
     }
     else {
+      cat(now(), "Loading result from file\n")
       load(resultfile)
     }
-browser()
+
     #Removing KNN, Baseline and DT from results to learn a metaclassifier more simple
     for (i in 1:length(results)) {
+      cat(now(), "-  Recalculating class: ", i, "\n")
       results[[i]]$summary$BASELINE <- NULL
       results[[i]]$summary$KNN_1 <- NULL
       results[[i]]$summary$KNN_3 <- NULL
