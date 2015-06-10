@@ -31,14 +31,20 @@ root <- function(file) {
     }
 
     cat("  - Running for metabase generation",now(), '\n')
-    #Runing K-Fold
-    set.seed(traindata$measures$num.instances);
-    kfoldmatrix <- get_kfoldsIndexes(traindata, 10);
-    
-    results <- mclapply(datasets, runningClassifiers, kfoldmatrix, path, mc.cores=min(CORES, length(datasets)))
-    #results <- lapply(datasets, runningClassifiers, kfoldmatrix, path)
-    save(results, file=path$get_rdatafile('details'))
-
+    resultfile <- path$get_rdatafile('details')
+    if (!file.exists(resultfile)) {
+      #Runing K-Fold
+      set.seed(traindata$measures$num.instances);
+      kfoldmatrix <- get_kfoldsIndexes(traindata, 10);
+      
+      results <- mclapply(datasets, runningClassifiers, kfoldmatrix, path, mc.cores=min(CORES, length(datasets)))
+      #results <- lapply(datasets, runningClassifiers, kfoldmatrix, path)
+      save(results, file=resultfile)
+    }
+    else {
+      load(resultfile)
+    }
+browser()
     #Removing KNN, Baseline and DT from results to learn a metaclassifier more simple
     for (i in 1:length(results)) {
       results[[i]]$summary$BASELINE <- NULL
