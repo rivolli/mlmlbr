@@ -12,6 +12,8 @@ library(FNN);
 library(MASS);
 library(randomForest);
 library(parallel);
+library(reshape2);
+library(ggplot2);
 
 # directory
 DIR = getwd();
@@ -25,7 +27,7 @@ FILES = list.files(
 );
 
 #number of cores
-CORES = 24;
+CORES = 5;
 
 #number of folds
 FOLDS = 10;

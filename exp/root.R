@@ -5,7 +5,7 @@
 root <- function(file) {
   path <- get_filenames(file)
 
-  if (!file.exists(path$resultfile) && path$datasetname == "flags") { # ) { #
+  if (!file.exists(path$resultfile)) { # && path$datasetname == "flags") {
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     if (is_sparce_data(traindata)) {
@@ -39,10 +39,23 @@ root <- function(file) {
     #results <- lapply(datasets, runningClassifiers, kfoldmatrix, path)
     save(results, file=path$get_rdatafile('details'))
 
-    methods <- unlist(lapply(results, function (kpart) kpart$auc))
-    accuracy <- unlist(lapply(results, function (kpart) kpart$accuracy))
+    #Removing KNN, Baseline and DT from results to learn a metaclassifier more simple
+    for (i in 1:length(results)) {
+      results[[i]]$summary$BASELINE <- NULL
+      results[[i]]$summary$KNN_1 <- NULL
+      results[[i]]$summary$KNN_3 <- NULL
+      results[[i]]$summary$KNN_5 <- NULL
+      results[[i]]$summary$KNN_7 <- NULL
+      results[[i]]$summary$DT <- NULL
+      
+      results[[i]]$auc <- names(which.max(unlist(lapply(results[[i]]$summary, function (m) m["_mean","AUC"]))))
+      results[[i]]$accuracy <- names(which.max(unlist(lapply(results[[i]]$summary, function (m) m["_mean","BalancedAccuracy"]))))  
+    }
 
-    write.csv(cbind(features, methods, accuracy), file=path$resultfile, row.names=FALSE)
+    auc <- unlist(lapply(results, function (kpart) kpart$auc))
+    accuracy <- unlist(lapply(results, function (kpart) kpart$accuracy))
+        
+    write.csv(cbind(features, auc, accuracy), file=path$resultfile, row.names=FALSE)
     rm(path, traindata, results, kfoldmatrix, features)
   }
 }
