@@ -7,6 +7,7 @@
 #' should be a value into [0,1] range
 #' @param threshold Threshold to use to generate bipartition of labels. By default the value 0.5 is used
 #' @return A list with multilabel predictive performance measures. The items in the list will be \itemize{
+#'  \item \code{ExactMatch}: Exact Match examples proportion
 #'  \item \code{Accuracy}: Example and bipartition based accuracy (averaged by instance)
 #'  \item \code{AUC}: Example and binary partition Area Under the Curve ROC (averaged by instance)
 #'  \item \code{AveragePrecision}: Example and ranking based average precision (how many steps have to be made in the ranking to reach a certain relevant label, averaged by instance)
@@ -72,6 +73,7 @@ mldr_evaluate <- function(mldr, predictions, threshold = 0.5) {
     MicroROC <- pROC::roc(unlist(trueLabels), predictions, algorithm = 3)
 
   list(
+    ExactMatch       = mldr_ExactMatch(trueLabels, predictions),
     Accuracy         = mldr_Accuracy(counters),
     AUC              = mldr_AUC(trueLabels, predictions),
     AveragePrecision = mldr_AveragePrecision(trueLabels, predictions),
@@ -93,6 +95,11 @@ mldr_evaluate <- function(mldr, predictions, threshold = 0.5) {
     SubsetAccuracy   = mldr_SubsetAccuracy(trueLabels, bipartition),
     ROC              = MicroROC
   )
+}
+
+# Calculate exact matches
+mldr_ExactMatch <- function (trueLabels, predictions) {
+  sum(apply(trueLabels == predictions, 1, sum) == ncol(trueLabels)) / nrow(trueLabels)
 }
 
 # Calculate example based accuracy

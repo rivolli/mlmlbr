@@ -97,7 +97,6 @@ normalize <- function(data) {
             if(is.na(d) || d == 0) {
                 d <- 1.0
             }
-            aux <- (data_2[col] - min_v) / d;
             data_2[col] <- (data_2[col] - min_v) / d
         }
     }
