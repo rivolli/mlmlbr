@@ -32,8 +32,12 @@ BinaryRelevance <- function (mtraindata, mtestdata, method="SVM", cores=1) {
   binary.result <- as.matrix(apply(sapply(binary.result, unlist), 2, as.integer))
   colnames(binary.result) <- rownames(mtraindata$labels)
   
-  mlresult <- mldr_evaluate(mtestdata, binary.result)
-  attr(mlresult, "predictions") <- binary.result
+  BR.evaluate(mtestdata, binary.result)
+}
+
+BR.evaluate <- function(mtestdata, predictions) {
+  mlresult <- mldr_evaluate(mtestdata, predictions)
+  attr(mlresult, "predictions") <- predictions
   
   mlresult
 }

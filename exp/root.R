@@ -80,8 +80,7 @@ root <- function(file) {
   }
   
   #Multilabel results
-  cat(path$datasetinfo, "\n")
-  if (!file.exists(path$datasetinfo) && path$datasetname == "flags") {
+  if (!file.exists(path$datasetinfo)) { #&& path$datasetname == "flags"
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     testdata <- mldr(path$testfile, auto_extension=FALSE, xml_file=path$xmlfile)
@@ -128,35 +127,76 @@ root <- function(file) {
     datasetresult <- read.csv.file(path$resultfile)
     classesresult <- rownames(datasetresult)
     #All Better Result AUC
-    resultfile <- path$get_tempfile('TOPAUC', '.RData')
+    resultfile <- path$get_tempfile('AUC', '.RData')
     if (file.exists(resultfile)) {
-      cat(now(), "Loading TOPAUC\n")
+      cat(now(), "Loading AUC\n")
       load(resultfile)
     }
     else {
-      cat (now(), "Running TOPAUC\n")
+      cat (now(), "Running AUC\n")
       predictions <- matrix(nrow=testdata$measures$num.instances, ncol=testdata$measures$num.labels)
-      for (classname in rownames(traindata$labels)) { 
+      colnames(predictions) <- rownames(testdata$labels)
+      
+      for (classname in rownames(traindata$labels)) {
         if (classname %in% classesresult) {
           #Alread calculated what is the best method
           method <- as.character(datasetresult[classname, "auc"])
         }
         else {
           #Use the best method observed in the results
-          
+          results <- c(
+            sum(attr(svm.results, "predictions")[,classname] == testdata$dataset[,classname]),
+            sum(attr(nb.results, "predictions")[,classname] == testdata$dataset[,classname]),
+            sum(attr(rf.results, "predictions")[,classname] == testdata$dataset[,classname])
+          )
+          method <- c("SVM", "NB", "RF")[which.max(results)]
         }
+        if (method == "SVM")      predictions[,classname] <- attr(svm.results, "predictions")[,classname]
+        else if (method == "NB")  predictions[,classname] <- attr(nb.results, "predictions")[,classname]
+        else if (method == "RF")  predictions[,classname] <- attr(rf.results, "predictions")[,classname]
       }
-      #list 
-      browser();
-      #rf.results <- BinaryRelevance(traindata, testdata, methods, CORES)
-      save(rf.results, file=resultfile)
+      auc.results <- BR.evaluate(testdata, predictions)      
+      save(auc.results, file=resultfile)
     }
     
-    results <- list(svm.results, nb.results, rf.results)
+    #All Better Result ACC
+    resultfile <- path$get_tempfile('ACC', '.RData')
+    if (file.exists(resultfile)) {
+      cat(now(), "Loading ACC\n")
+      load(resultfile)
+    }
+    else {
+      cat (now(), "Running ACC\n")
+      predictions <- matrix(nrow=testdata$measures$num.instances, ncol=testdata$measures$num.labels)
+      colnames(predictions) <- rownames(testdata$labels)
+      
+      for (classname in rownames(traindata$labels)) {
+        if (classname %in% classesresult) {
+          #Alread calculated what is the best method
+          method <- as.character(datasetresult[classname, "accuracy"])
+        }
+        else {
+          #Use the best method observed in the results
+          results <- c(
+            sum(attr(svm.results, "predictions")[,classname] == testdata$dataset[,classname]),
+            sum(attr(nb.results, "predictions")[,classname] == testdata$dataset[,classname]),
+            sum(attr(rf.results, "predictions")[,classname] == testdata$dataset[,classname])
+          )
+          method <- c("SVM", "NB", "RF")[which.max(results)]
+        }
+        if (method == "SVM")      predictions[,classname] <- attr(svm.results, "predictions")[,classname]
+        else if (method == "NB")  predictions[,classname] <- attr(nb.results, "predictions")[,classname]
+        else if (method == "RF")  predictions[,classname] <- attr(rf.results, "predictions")[,classname]
+      }
+      acc.results <- BR.evaluate(testdata, predictions)      
+      save(acc.results, file=resultfile)
+    }
+    
+    results <- list(svm.results, nb.results, rf.results, auc.results, acc.results)
     content <- do.call(rbind, lapply(results, mresult.as.vector))
     rownames(content) <- c("SVM", "NB", "RF", "AUC", "ACC")
     
-    #write.csv(content, file=path$datasetinfo)
+    write.csv(content, file=path$datasetinfo)
   }
 }
 
