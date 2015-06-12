@@ -141,7 +141,7 @@ mldr_preprocess <- function (mdata, tmdata=NULL, transform.sparce=T, transform.n
 # This works only to mldr data with class index in the lasts columns
 # @returns 2 differents types: a single mdata when tmdata is null or a list(mdata, tmdata)2
 mldr_replace_nominal_att <- function(mdata, tmdata=NULL) {
-  result <- {}
+  result <- matrix(nrow=mdata$measures$num.instances, ncol=0)
   if (is.null(tmdata)) {
     #Only one mdata
     for(i in mdata$attributesIndexes) {
@@ -154,7 +154,7 @@ mldr_replace_nominal_att <- function(mdata, tmdata=NULL) {
   }
   else {
     #Train and Test mldr data
-    tresult <- {}
+    tresult <- matrix(nrow=tmdata$measures$num.instances, ncol=0)
     for(i in mdata$attributesIndexes) {
       if (is.numeric(mdata$dataset[,i])) {
         #TODO test if test column is also numeric
