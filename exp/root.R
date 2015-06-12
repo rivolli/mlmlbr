@@ -113,6 +113,21 @@ root <- function(file) {
       save(rf.results, file=resultfile)
     }
     
+    #All Better Result
+    resultfile <- path$get_tempfile('TOP', '.RData')
+    if (file.exists(resultfile)) {
+      cat(now(), "Loading Tops\n")
+      load(resultfile)
+    }
+    else {
+      cat (now(), "Running TOPs\n")
+      methods <- character()
+      #list 
+      browser();
+      rf.results <- BinaryRelevance(traindata, testdata, methods, CORES)
+      save(rf.results, file=resultfile)
+    }
+    
     results <- list(svm.results, nb.results, rf.results)
     content <- do.call(rbind, lapply(results, mresult.as.vector))
     rownames(content) <- c("SVM", "NB", "RF")
