@@ -2,6 +2,13 @@ now <- function () {
   return(as.character(Sys.time()));
 }
 
+#Read a CSV file with rowname (The first column is the rowname)
+read.csv.file <- function (file) {
+  table <- read.csv(file)
+  rownames(table) <- table[,1]
+  table[,-1]
+}
+
 #If data has NA it is sparce
 is_sparce_data <- function (mdata) {
   sum(apply(mdata$dataset, 2, function (col) sum(!complete.cases(col)))) > 0
