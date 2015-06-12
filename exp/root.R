@@ -80,7 +80,7 @@ root <- function(file) {
   }
   
   #Multilabel results
-  if (!file.exists(path$datasetinfo)) { #&& path$datasetname == "flags"
+  if (!file.exists(path$datasetinfo) && path$datasetname == "flags") { #
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     testdata <- mldr(path$testfile, auto_extension=FALSE, xml_file=path$xmlfile)

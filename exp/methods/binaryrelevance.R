@@ -24,10 +24,10 @@ BinaryRelevance <- function (mtraindata, mtestdata, method="SVM", cores=1) {
   
   binary.result <- {}
   if (cores == 1) {
-    binary.result <- lapply(datasets, function (ds) BR.run(ds, method[substitute(ds)[[3]]], mtestdata))
+    binary.result <- lapply(1:length(datasets), function (i) BR.run(datasets[[i]], method[i], mtestdata))
   }
   else {
-    binary.result <- mclapply(datasets, function (ds) BR.run(ds, method[substitute(ds)[[3]]], mtestdata), mc.cores=min(cores, length(datasets)))
+    binary.result <- mclapply(1:length(datasets), function (i) BR.run(datasets[[i]], method[i], mtestdata), mc.cores=min(cores, length(datasets)))
   }
   binary.result <- as.matrix(apply(sapply(binary.result, unlist), 2, as.integer))
   colnames(binary.result) <- rownames(mtraindata$labels)
