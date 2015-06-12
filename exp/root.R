@@ -5,7 +5,7 @@
 root <- function(file) {
   path <- get_filenames(file)
 
-  if (!file.exists(path$resultfile)) { # && path$datasetname == "flags") {
+  if (!file.exists(path$resultfile) && path$datasetname == "flags") {
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     if (is_sparce_data(traindata)) {
@@ -22,8 +22,12 @@ root <- function(file) {
     cat("  - Extract features for meta learning", now(), '\n')
     featurefile <- path$get_tempfile('features', '.RData')
     if (!file.exists(featurefile)) {
-      features <- as.data.frame(do.call("rbind", mclapply(datasets, characterization, path, mc.cores=min(CORES, length(datasets)))))
-      #features <- as.data.frame(do.call("rbind", lapply(datasets, characterization, path)))
+      if (CORES > 1) {
+        features <- as.data.frame(do.call("rbind", mclapply(datasets, characterization, path, mc.cores=min(CORES, length(datasets))))) 
+      }
+      else {
+        features <- as.data.frame(do.call("rbind", lapply(datasets, characterization, path)))
+      }
       save(features, file=featurefile)
     }
     else {
@@ -37,8 +41,13 @@ root <- function(file) {
       set.seed(traindata$measures$num.instances);
       kfoldmatrix <- get_kfoldsIndexes(traindata, 10);
       
-      results <- mclapply(datasets, runningClassifiers, kfoldmatrix, path, mc.cores=min(CORES, length(datasets)))
-      #results <- lapply(datasets, runningClassifiers, kfoldmatrix, path)
+      if (CORES > 1) {
+        results <- mclapply(datasets, runningClassifiers, kfoldmatrix, path, mc.cores=min(CORES, length(datasets)))
+      }
+      else {
+        results <- lapply(datasets, runningClassifiers, kfoldmatrix, path)
+      }
+      
       save(results, file=resultfile)
     }
     else {
@@ -62,78 +71,79 @@ root <- function(file) {
 
     auc <- unlist(lapply(results, function (kpart) kpart$auc))
     accuracy <- unlist(lapply(results, function (kpart) kpart$accuracy))
-        
-    write.csv(cbind(features, auc, accuracy), file=path$resultfile, row.names=FALSE)
-    rm(path, traindata, results, kfoldmatrix, features)
+    rownames(features) <- rownames(traindata$labels)
+
+    write.csv(cbind(features, auc, accuracy), file=path$resultfile)
+    rm(path, traindata, results, features)
   }
   
   #Multilabel results
-  cat(path$datasetinfo, "\n")
-  if (!file.exists(path$datasetinfo) && path$datasetname == "flags") {
-    cat('** Reading: ', path$datasetname, now(), '\n')
-    traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
-    testdata <- mldr(path$testfile, auto_extension=FALSE, xml_file=path$xmlfile)
-    ds <- mldr_preprocess(traindata, testdata)
-    traindata <- ds[[1]]
-    testdata <- ds[[2]]
-    
-    #SVM Result
-    resultfile <- path$get_tempfile('SVM', '.RData')
-    if (file.exists(resultfile)) {
-      cat (now(), "Loading SVM\n")
-      load(resultfile)
-    }
-    else {
-      cat (now(), "Running SVM\n")
-      svm.results <- BinaryRelevance(traindata, testdata, "SVM", CORES)  
-      save(svm.results, file=resultfile)
-    }
-    
-    #NB Result
-    resultfile <- path$get_tempfile('NB', '.RData')
-    if (file.exists(resultfile)) {
-      cat (now(), "Loading NB\n")
-      load(resultfile)
-    }
-    else {
-      cat (now(), "Running NB\n")
-      nb.results <- BinaryRelevance(traindata, testdata, "NB", CORES)
-      save(nb.results, file=resultfile)
-    }
-    
-    #RF Result
-    resultfile <- path$get_tempfile('RF', '.RData')
-    if (file.exists(resultfile)) {
-      cat (now(), "Loading RF\n")
-      load(resultfile)
-    }
-    else {
-      cat (now(), "Running RF\n")
-      rf.results <- BinaryRelevance(traindata, testdata, "RF", CORES)
-      save(rf.results, file=resultfile)
-    }
-    
-    #All Better Result
-    resultfile <- path$get_tempfile('TOP', '.RData')
-    if (file.exists(resultfile)) {
-      cat(now(), "Loading Tops\n")
-      load(resultfile)
-    }
-    else {
-      cat (now(), "Running TOPs\n")
-      methods <- character()
-      #list 
-      browser();
-      rf.results <- BinaryRelevance(traindata, testdata, methods, CORES)
-      save(rf.results, file=resultfile)
-    }
-    
-    results <- list(svm.results, nb.results, rf.results)
-    content <- do.call(rbind, lapply(results, mresult.as.vector))
-    rownames(content) <- c("SVM", "NB", "RF")
-    
-    write.csv(content, file=path$datasetinfo)
-  }
+#   cat(path$datasetinfo, "\n")
+#   if (!file.exists(path$datasetinfo) && path$datasetname == "flags") {
+#     cat('** Reading: ', path$datasetname, now(), '\n')
+#     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
+#     testdata <- mldr(path$testfile, auto_extension=FALSE, xml_file=path$xmlfile)
+#     ds <- mldr_preprocess(traindata, testdata)
+#     traindata <- ds[[1]]
+#     testdata <- ds[[2]]
+#     
+#     #SVM Result
+#     resultfile <- path$get_tempfile('SVM', '.RData')
+#     if (file.exists(resultfile)) {
+#       cat (now(), "Loading SVM\n")
+#       load(resultfile)
+#     }
+#     else {
+#       cat (now(), "Running SVM\n")
+#       svm.results <- BinaryRelevance(traindata, testdata, "SVM", CORES)  
+#       save(svm.results, file=resultfile)
+#     }
+#     
+#     #NB Result
+#     resultfile <- path$get_tempfile('NB', '.RData')
+#     if (file.exists(resultfile)) {
+#       cat (now(), "Loading NB\n")
+#       load(resultfile)
+#     }
+#     else {
+#       cat (now(), "Running NB\n")
+#       nb.results <- BinaryRelevance(traindata, testdata, "NB", CORES)
+#       save(nb.results, file=resultfile)
+#     }
+#     
+#     #RF Result
+#     resultfile <- path$get_tempfile('RF', '.RData')
+#     if (file.exists(resultfile)) {
+#       cat (now(), "Loading RF\n")
+#       load(resultfile)
+#     }
+#     else {
+#       cat (now(), "Running RF\n")
+#       rf.results <- BinaryRelevance(traindata, testdata, "RF", CORES)
+#       save(rf.results, file=resultfile)
+#     }
+#     
+#     #All Better Result AUC
+#     resultfile <- path$get_tempfile('TOPAUC', '.RData')
+#     if (file.exists(resultfile)) {
+#       cat(now(), "Loading TOPAUC\n")
+#       load(resultfile)
+#     }
+#     else {
+#       cat (now(), "Running TOPAUC\n")
+#       methods <- character()
+#       #list 
+#       browser();
+#       rf.results <- BinaryRelevance(traindata, testdata, methods, CORES)
+#       save(rf.results, file=resultfile)
+#     }
+#     
+#     results <- list(svm.results, nb.results, rf.results)
+#     content <- do.call(rbind, lapply(results, mresult.as.vector))
+#     rownames(content) <- c("SVM", "NB", "RF", "AUC", "ACC")
+#     
+#     #write.csv(content, file=path$datasetinfo)
+#   }
 }
 
 #Runing classifiers
