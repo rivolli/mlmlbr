@@ -5,7 +5,7 @@
 root <- function(file) {
   path <- get_filenames(file)
 
-  if (!file.exists(path$resultfile) && path$datasetname == "flags") {
+  if (!file.exists(path$resultfile)){ # && path$datasetname == "flags") {
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     if (is_sparce_data(traindata)) {
@@ -37,9 +37,11 @@ root <- function(file) {
     cat("  - Running for metabase generation",now(), '\n')
     resultfile <- path$get_rdatafile('details')
     if (!file.exists(resultfile)) {
+      cat("Running 10-Fold Cross Validation", now(), "\n")
+
       #Runing K-Fold
-      set.seed(traindata$measures$num.instances);
-      kfoldmatrix <- get_kfoldsIndexes(traindata, 10);
+      set.seed(traindata$measures$num.instances)
+      kfoldmatrix <- get_kfoldsIndexes(traindata, 10)
       
       if (CORES > 1) {
         results <- mclapply(datasets, runningClassifiers, kfoldmatrix, path, mc.cores=min(CORES, length(datasets)))
@@ -51,13 +53,13 @@ root <- function(file) {
       save(results, file=resultfile)
     }
     else {
-      cat(now(), "Loading result from file\n")
+      cat("Loading result from file", now(), "\n")
       load(resultfile)
     }
 
     #Removing KNN, Baseline and DT from results to learn a metaclassifier more simple
     for (i in 1:length(results)) {
-      cat(now(), "-  Recalculating class: ", i, "\n")
+      cat("- Recalculating class: ", i, now(), "\n")
       results[[i]]$summary$BASELINE <- NULL
       results[[i]]$summary$KNN_1 <- NULL
       results[[i]]$summary$KNN_3 <- NULL
