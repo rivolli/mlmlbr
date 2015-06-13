@@ -31,7 +31,7 @@ BinaryRelevance <- function (mtraindata, mtestdata, method="SVM", cores=1) {
   }
   binary.result <- as.matrix(apply(sapply(binary.result, unlist), 2, as.integer))
   colnames(binary.result) <- rownames(mtraindata$labels)
-  
+  browser();
   BR.evaluate(mtestdata, binary.result)
 }
 
@@ -39,18 +39,24 @@ BR.evaluate <- function(mtestdata, predictions) {
   if (mtestdata$measures$num.labels != ncol(predictions)) {
     #Assuming that classes are in the same order
     classes <- colnames(predictions)
-    index <- 1;
+    insert_in <- 1
     for (cls in rownames(mtestdata$labels)) {
       if (!(cls %in% classes)) {
-        newpredictions <- cbind(predictions[,1:index], rep(0, mtestdata$measures$num.instances))
-        index <- index + 1
-        if (ncol(predictions) >= index) {
-          newpredictions <- cbind(newpredictions, predictions[,index:ncol(predictions)])
+        newcol <- rep(0, mtestdata$measures$num.instances)
+        if (insert_in > 1) {
+          npred <- predictions[,1:(insert_in-1)]
+          npred <- cbind(npred, newcol)
         }
-        colnames(newpredictions)[index] <- cls
-        predictions <- newpredictions
+        else {
+          npred <- matrix(newcol, nrow=mtestdata$measures$num.instances)
+        }
+        colnames(npred)[insert_in] <- cls
+        if (ncol(predictions) > insert_in) {
+          npred <- cbind(npred, predictions[,insert_in:ncol(predictions)])
+        }
+        predictions <- npred
       }
-      index <- index + 1
+      insert_in <- insert_in + 1
     }
   }
   mlresult <- mldr_evaluate(mtestdata, predictions)
