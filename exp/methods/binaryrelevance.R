@@ -31,7 +31,6 @@ BinaryRelevance <- function (mtraindata, mtestdata, method="SVM", cores=1) {
   }
   binary.result <- as.matrix(apply(sapply(binary.result, unlist), 2, as.integer))
   colnames(binary.result) <- rownames(mtraindata$labels)
-  browser();
   BR.evaluate(mtestdata, binary.result)
 }
 
