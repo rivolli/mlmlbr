@@ -80,7 +80,7 @@ root <- function(file) {
   }
   
   #Multilabel results
-  if (!file.exists(path$datasetinfo)){ # && path$datasetname == "flags") { #
+  if (!file.exists(path$datasetinfo)) {# && path$datasetname == "flags") { #
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     testdata <- mldr(path$testfile, auto_extension=FALSE, xml_file=path$xmlfile)
@@ -192,9 +192,37 @@ root <- function(file) {
       save(acc.results, file=resultfile)
     }
     
-    results <- list(svm.results, nb.results, rf.results, auc.results, acc.results)
+    #All Better Result TOP
+    resultfile <- path$get_tempfile('TOP', '.RData')
+    if (file.exists(resultfile)) {
+      cat(now(), "Loading TOP\n")
+      load(resultfile)
+    }
+    else {
+      cat (now(), "Running TOP\n")
+      predictions <- matrix(nrow=testdata$measures$num.instances, ncol=testdata$measures$num.labels)
+      colnames(predictions) <- rownames(testdata$labels)
+      
+      for (classname in rownames(traindata$labels)) {
+        #Always use the best method observed in the results
+        results <- c(
+          sum(attr(svm.results, "predictions")[,classname] == testdata$dataset[,classname]),
+          sum(attr(nb.results, "predictions")[,classname] == testdata$dataset[,classname]),
+          sum(attr(rf.results, "predictions")[,classname] == testdata$dataset[,classname])
+        )
+        method <- c("SVM", "NB", "RF")[which.max(results)]
+        
+        if (method == "SVM")      predictions[,classname] <- attr(svm.results, "predictions")[,classname]
+        else if (method == "NB")  predictions[,classname] <- attr(nb.results, "predictions")[,classname]
+        else if (method == "RF")  predictions[,classname] <- attr(rf.results, "predictions")[,classname]
+      }
+      top.results <- BR.evaluate(testdata, predictions)
+      save(top.results, file=resultfile)
+    }
+    
+    results <- list(svm.results, nb.results, rf.results, auc.results, acc.results, top.results)
     content <- do.call(rbind, lapply(results, mresult.as.vector))
-    rownames(content) <- c("SVM", "NB", "RF", "AUC", "ACC")
+    rownames(content) <- c("SVM", "NB", "RF", "AUC", "ACC", "TOP")
     
     write.csv(content, file=path$datasetinfo)
   }
