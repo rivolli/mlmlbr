@@ -80,7 +80,7 @@ root <- function(file) {
   }
   
   #Multilabel results
-  if (!file.exists(path$datasetinfo)) {# && path$datasetname == "flags") { #
+  if (!file.exists(path$datasetinfo) && path$datasetname != "medical") { #
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     testdata <- mldr(path$testfile, auto_extension=FALSE, xml_file=path$xmlfile)
@@ -137,7 +137,7 @@ root <- function(file) {
       predictions <- matrix(nrow=testdata$measures$num.instances, ncol=testdata$measures$num.labels)
       colnames(predictions) <- rownames(testdata$labels)
       
-      for (classname in rownames(traindata$labels)) {
+      for (classname in rownames(testdata$labels)) {
         if (classname %in% classesresult) {
           #Alread calculated what is the best method
           method <- as.character(datasetresult[classname, "auc"])
@@ -170,7 +170,7 @@ root <- function(file) {
       predictions <- matrix(nrow=testdata$measures$num.instances, ncol=testdata$measures$num.labels)
       colnames(predictions) <- rownames(testdata$labels)
       
-      for (classname in rownames(traindata$labels)) {
+      for (classname in rownames(testdata$labels)) {
         if (classname %in% classesresult) {
           #Alread calculated what is the best method
           method <- as.character(datasetresult[classname, "accuracy"])
@@ -203,7 +203,7 @@ root <- function(file) {
       predictions <- matrix(nrow=testdata$measures$num.instances, ncol=testdata$measures$num.labels)
       colnames(predictions) <- rownames(testdata$labels)
       
-      for (classname in rownames(traindata$labels)) {
+      for (classname in rownames(testdata$labels)) {
         #Always use the best method observed in the results
         results <- c(
           sum(attr(svm.results, "predictions")[,classname] == testdata$dataset[,classname]),
