@@ -9,10 +9,14 @@ setup_metabase <- function() {
 run_metabase <- function () {
   setup_metabase();
   
-  results <- load_datasets();
-  datagraphics <- generate_datagraphics(results)
-  show_plot_classifiers(datagraphics$methodsauc, "AUC Results")
-  show_plot_classifiers(datagraphics$methodsacc, "Accuracy Results")
+  #results <- load_datasets()
+  #datagraphics <- generate_datagraphics(results)
+  #show_plot_classifiers(datagraphics$methodsauc, "AUC Results")
+  #show_plot_classifiers(datagraphics$methodsacc, "Accuracy Results")
+  
+  infores <- load_datasets_info()
+  infographics <- generate_infographics(infores)
+  show_plot_infocomparation(infographics)
   
   TRUE
 }
@@ -21,10 +25,40 @@ load_datasets <- function () {
   datasets <- list()
   for(file in FILES) {
     path <- get_filenames(file)
-    datasets[[path$datasetname]] <- read.csv.file(path$resultfile)
+    if (file.exists(path$resultfile))
+      datasets[[path$datasetname]] <- read.csv.file(path$resultfile)
   }
   
   datasets
+}
+
+load_datasets_info <- function () {
+  datasets <- list()
+  for(file in FILES) {
+    path <- get_filenames(file)
+    if (file.exists(path$datasetinfo))
+      datasets[[path$datasetname]] <- read.csv.file(path$datasetinfo)
+  }
+  
+  datasets
+}
+
+generate_infographics <- function (results) {
+  ret <- list()
+  for (metric in c("Accuracy", "SubsetAccuracy", "FMeasure", "HammingLoss")) {
+    data <- matrix(
+      rep(0, length(names(results)) * 4), ncol=4,
+      dimnames=list(names(results), c("SVM", "MY", "TOP3", "ALL"))
+    )
+    for (dsname in names(results)) {
+      data[dsname,] <- results[[dsname]][c("SVM", "AUC", "TOP3", "ALL"), metric]
+      data[dsname,"MY"] <- max(results[[dsname]][c("AUC", "ACC"), metric]) #select the better result (auc or acc)
+      if (metric == "HammingLoss")
+        data[dsname,"MY"] <- min(results[[dsname]][c("AUC", "ACC"), metric]) #select the better result (auc or acc)
+    }
+    ret[[metric]] <- data
+  }
+  ret
 }
 
 generate_datagraphics <- function (results) {
@@ -81,4 +115,15 @@ show_plot_classifiers <- function (data, title) {
   g <- g + facet_wrap(~Var1, scales="free")
   g <- g + ggtitle(title) + ylab("") + xlab("") + labs(fill="Classifiers")
   plot(g)
+}
+
+show_plot_infocomparation <- function (datagraphics) {
+  for(metric in names(datagraphics)) {
+    df <- melt(datagraphics[[metric]])
+    g <- ggplot(data=df, aes(x=Var1, y=value, group=Var2))
+    g <- g + geom_line(aes(colour=Var2, linetype=Var2), size=1)
+    g <- g + ggtitle(paste(metric, "Comparative")) + ylab(metric) + xlab("Datasets")
+    g <- g + theme(axis.text.x = element_text(angle = 45, hjust = 1))
+    plot(g)
+  }
 }
