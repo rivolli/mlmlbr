@@ -252,7 +252,7 @@ mldr_normalize <- function(mdata) {
 
 #Convert a mldr result to a vector
 mresult.as.vector <- function (mresult) {
-  measures <- c("ExactMatch", "Accuracy", "AUC", "AveragePrecision", "Coverage", "FMeasure", "HammingLoss",
+  measures <- c("Accuracy", "AUC", "AveragePrecision", "Coverage", "FMeasure", "HammingLoss",
     "MacroAUC", "MacroFMeasure", "MacroPrecision", "MacroRecall", "MicroAUC", "MicroFMeasure", "MicroPrecision",
     "MicroRecall", "OneError", "Precision", "RankingLoss", "Recall", "SubsetAccuracy")
   unlist(mresult[measures])

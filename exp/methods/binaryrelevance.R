@@ -85,3 +85,34 @@ BR.executeRF <- function (dataset, mtest) {
   
   result
 }
+
+BR.executeDT <- function (dataset, mtest) {
+  classname <- names(dataset)[ncol(dataset)]
+  formula <- as.formula(paste(classname, " ~ .", sep=""))
+  model <- RWeka::J48(formula, dataset) #Using RWeka:: prefix because whithout it, Running with mclapply doesnt work
+  result <- predict(model, mtest$dataset[mtest$attributesIndexes])
+  
+  result
+}
+
+BR.executeKNN <- function (dataset, k, mtest) {
+  result <- knn(dataset[,-ncol(dataset)], mtest$dataset[mtest$attributesIndexes], dataset[,ncol(dataset)], k)
+  
+  result
+}
+
+BR.executeKNN_1 <- function (dataset, mtest) {
+  BR.executeKNN(dataset, 1, mtest)
+}
+
+BR.executeKNN_3 <- function (dataset, mtest) {
+  BR.executeKNN(dataset, 3, mtest)
+}
+
+BR.executeKNN_5 <- function (dataset, mtest) {
+  BR.executeKNN(dataset, 5, mtest)
+}
+
+BR.executeKNN_7 <- function (dataset, mtest) {
+  BR.executeKNN(dataset, 7, mtest)
+}
