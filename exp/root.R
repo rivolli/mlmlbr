@@ -67,16 +67,18 @@ root <- function(file) {
       results[[i]]$summary$KNN_7 <- NULL
       results[[i]]$summary$DT <- NULL
       
-      results[[i]]$auc <- names(which.max(unlist(lapply(results[[i]]$summary, function (m) m["_mean","AUC"]))))
-      results[[i]]$accuracy <- names(which.max(unlist(lapply(results[[i]]$summary, function (m) m["_mean","BalancedAccuracy"]))))  
+      results[[i]]$topauc <- names(which.max(unlist(lapply(results[[i]]$summary, function (m) m["_mean","AUC"]))))
+      results[[i]]$topaccuracy <- names(which.max(unlist(lapply(results[[i]]$summary, function (m) m["_mean","BalancedAccuracy"]))))  
     }
 
     auc <- unlist(lapply(results, function (kpart) kpart$auc))
     accuracy <- unlist(lapply(results, function (kpart) kpart$accuracy))
+    topauc <- unlist(lapply(results, function (kpart) kpart$topauc))
+    topaccuracy <- unlist(lapply(results, function (kpart) kpart$topaccuracy))
     rownames(features) <- rownames(traindata$labels)
 
-    write.csv(cbind(features, auc, accuracy), file=path$resultfile)
-    rm(path, traindata, results, features)
+    write.csv(cbind(features, auc, accuracy, topauc, topaccuracy), file=path$resultfile)
+    rm(traindata, results, features)
   }
   
   #Multilabel results
