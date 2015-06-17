@@ -56,7 +56,7 @@ remove_unique_attributes <- function (mdata, limitecls=0, tmdata=NULL) {
   else {
     tdataset <- data.frame(row.names=1:tmdata$measures$num.instances)
     for (i in mdata$attributesIndexes) {
-      if (length(unique(mdata$dataset[,i])) > 1 || length(unique(tmdata$dataset[,i])) > 1) {
+      if (length(unique(mdata$dataset[,i])) > 1 && length(unique(tmdata$dataset[,i])) > 1) {
         dataset <- cbind(dataset, mdata$dataset[i])
         tdataset <- cbind(tdataset, tmdata$dataset[i])
       }
@@ -141,7 +141,7 @@ mldr_preprocess <- function (mdata, tmdata=NULL, transform.sparce=T, transform.n
 # This works only to mldr data with class index in the lasts columns
 # @returns 2 differents types: a single mdata when tmdata is null or a list(mdata, tmdata)2
 mldr_replace_nominal_att <- function(mdata, tmdata=NULL) {
-  result <- matrix(nrow=mdata$measures$num.instances, ncol=0)
+  result <- data.frame(row.names=1:mdata$measures$num.instances)
   if (is.null(tmdata)) {
     #Only one mdata
     for(i in mdata$attributesIndexes) {
@@ -154,7 +154,7 @@ mldr_replace_nominal_att <- function(mdata, tmdata=NULL) {
   }
   else {
     #Train and Test mldr data
-    tresult <- matrix(nrow=tmdata$measures$num.instances, ncol=0)
+    tresult <- data.frame(row.names=1:tmdata$measures$num.instances)
     for(i in mdata$attributesIndexes) {
       if (is.numeric(mdata$dataset[,i])) {
         #TODO test if test column is also numeric

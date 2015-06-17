@@ -83,7 +83,7 @@ acc.simple = function(pred, test) {
 #Evaluate a confusion matrix - problemas multiclasse
 #	- (error, precision, recall, fscore)
 
-acc.multi.measures = function(score, pred, test) {
+acc.multi.measures = function(pred, test) {
 
 	levels(pred) = levels(test);
 	confusion.matrix = table(pred, test)

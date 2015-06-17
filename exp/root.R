@@ -5,7 +5,7 @@
 root <- function(file) {
   path <- get_filenames(file)
 
-  if (!file.exists(path$resultfile)){ # && path$datasetname == "flags") {
+  if (!file.exists(path$resultfile) && path$datasetname == "flags") {
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     if (is_sparce_data(traindata)) {
@@ -33,6 +33,7 @@ root <- function(file) {
     else {
       load(featurefile)
     }
+    rownames(features) <- rownames(traindata$labels)
 
     cat("  - Running for metabase generation",now(), '\n')
     resultfile <- path$get_rdatafile('details')
@@ -71,18 +72,36 @@ root <- function(file) {
       results[[i]]$topaccuracy <- names(which.max(unlist(lapply(results[[i]]$summary, function (m) m["_mean","BalancedAccuracy"]))))  
     }
 
+    #Multilabel data metafeatures
+    mlfeatures <- data.frame(
+      Nlbst=rep(traindata$measures$num.labelsets, nrow(features)),
+      NSlbst=rep(traindata$measures$num.single.labelsets, nrow(features)),
+      Mfreq=rep(traindata$measures$max.frequency, nrow(features)),
+      LCard=rep(traindata$measures$cardinality, nrow(features)),
+      LDen=rep(traindata$measures$density, nrow(features)),
+      Mir=rep(traindata$measures$meanIR, nrow(features)),
+      Scl=rep(traindata$measures$scumble, nrow(features)),
+      Lfq=rep(0, nrow(features)),
+      IRLbl=rep(0, nrow(features)),
+      LScl=rep(0, nrow(features)),
+      row.names = rownames(features)
+    )
+    
+    for (cls in rownames(mlfeatures)) {
+      mlfeatures[cls, c("Lfq", "IRLbl", "LScl")] <- traindata$labels[cls, c("freq", "IRLbl", "SCUMBLE")]
+    }
+    
     auc <- unlist(lapply(results, function (kpart) kpart$auc))
     accuracy <- unlist(lapply(results, function (kpart) kpart$accuracy))
     topauc <- unlist(lapply(results, function (kpart) kpart$topauc))
     topaccuracy <- unlist(lapply(results, function (kpart) kpart$topaccuracy))
-    rownames(features) <- rownames(traindata$labels)
-
-    write.csv(cbind(features, auc, accuracy, topauc, topaccuracy), file=path$resultfile)
+    
+    write.csv(cbind(features, mlfeatures, auc, accuracy, topauc, topaccuracy), file=path$resultfile)
     rm(traindata, results, features)
   }
   
   #Multilabel results
-  if (!file.exists(path$datasetinfo) && path$datasetname != "medical") { #
+  if (!file.exists(path$datasetinfo)){ # && path$datasetname != "medical") { #
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     testdata <- mldr(path$testfile, auto_extension=FALSE, xml_file=path$xmlfile)
