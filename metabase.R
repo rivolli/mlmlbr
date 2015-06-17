@@ -9,7 +9,7 @@ setup_metabase <- function() {
 run_metabase <- function () {
   setup_metabase();
   
-  results <- load_datasets();
+  results <- load_datasets()
   metainfo <- generate_metabase(results)
 
    if (CORES > 1) {
@@ -152,6 +152,9 @@ show_plot_infocomparation <- function (datagraphics) {
     df <- melt(datagraphics[[metric]])
     g <- ggplot(data=df, aes(x=Var1, y=value, group=Var2))
     g <- g + geom_line(aes(colour=Var2, linetype=Var2), size=1)
+    g <- g + geom_point()
+    #g <- g + scale_fill_hue(name="Classifiers")
+    #g <- g + scale_linetype_discrete(name="Classifiers")
     g <- g + ggtitle(paste(metric, "Comparative")) + ylab(metric) + xlab("Datasets")
     g <- g + theme(axis.text.x = element_text(angle = 45, hjust = 1))
     plot(g)
