@@ -34,7 +34,8 @@ load_datasets <- function () {
   datasets <- list()
   for(file in FILES) {
     path <- get_filenames(file)
-    datasets[[path$datasetname]] <- read.csv.file(path$resultfile)
+    if (file.exists(path$resultfile))
+      datasets[[path$datasetname]] <- read.csv.file(path$resultfile)
   }
   
   datasets
