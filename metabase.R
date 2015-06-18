@@ -11,7 +11,6 @@ run_metabase <- function () {
   
   results <- load_datasets()
   metainfo <- generate_metabase(results)
-
    if (CORES > 1) {
      results <- mclapply(names(results), runMTLclassify, metainfo, mc.cores=min(CORES, length(results)))
    }
@@ -34,8 +33,12 @@ load_datasets <- function () {
   datasets <- list()
   for(file in FILES) {
     path <- get_filenames(file)
-    if (file.exists(path$resultfile))
+    if (file.exists(path$resultfile)) {
       datasets[[path$datasetname]] <- read.csv.file(path$resultfile)
+      load(path$get_tempfile('TOP3classifiers', '.RData'))
+      datasets[[path$datasetname]] <- cbind(datasets[[path$datasetname]], classifiers)
+      colnames(datasets[[path$datasetname]])[ncol(datasets[[path$datasetname]])] <- "realacc"
+    }
   }
   
   datasets
