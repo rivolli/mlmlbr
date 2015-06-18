@@ -99,7 +99,7 @@ runningExperimentsEvaluation <- function (traindata, testdata, path) {
   classifiers <- get_betters_classifiers(list("SVM"=svm.results, "NB"=nb.results, "RF"=rf.results), testdata)
   predictions <- get_predictions_from_list(classifiers, lresults, testdata)
   lresults[["TOP3"]] <- BR.evaluate(testdata, predictions)
-  save(dt.results, file=path$get_tempfile('TOP3classifiers', '.RData'))
+  save(classifiers, file=path$get_tempfile('TOP3classifiers', '.RData'))
   
   #All Better Result in All classifiers
   cat (now(), "Running ALL\n")
