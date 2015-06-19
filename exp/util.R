@@ -257,3 +257,10 @@ mresult.as.vector <- function (mresult) {
     "MicroRecall", "OneError", "Precision", "RankingLoss", "Recall", "SubsetAccuracy")
   unlist(mresult[measures])
 }
+
+change_special_chars <- function(str, replaceWith='.') {
+  symbols <- c(' ', "'", '"', '-')
+  for (s in symbols)
+    str <- gsub(s, replaceWith, str)
+  str
+}

@@ -7,24 +7,26 @@ setup_metabase <- function() {
 }
 
 run_metabase <- function () {
-  setup_metabase();
+   setup_metabase();
   
-  results <- load_datasets()
-  metainfo <- generate_metabase(results)
+   results <- load_datasets()
+   metainfo <- generate_metabase(results)
    if (CORES > 1) {
-     results <- mclapply(names(results), runMTLclassify, metainfo, mc.cores=min(CORES, length(results)))
+     mtlres <- mclapply(names(results), runMTLclassify, metainfo, mc.cores=min(CORES, length(results)))
    }
    else {
-     results <- lapply(names(results), runMTLclassify, metainfo)
+     mtlres <- lapply(names(results), runMTLclassify, metainfo)
    }
-  
+   names(mtlres) <- names(results)
+   #tbls <- do.call(rbind, mtlres)
+    
 #   datagraphics <- generate_datagraphics(results)
 #   show_plot_classifiers(datagraphics$methodsauc, "AUC Results")
 #   show_plot_classifiers(datagraphics$methodsacc, "Accuracy Results")
-#     
-#   infores <- load_datasets_info()
-#   infographics <- generate_infographics(infores)
-#   show_plot_infocomparation(infographics)
+     
+   infores <- load_datasets_info()
+   infographics <- generate_infographics(infores)
+   show_plot_infocomparation(infographics)
 
   TRUE
 }
@@ -35,12 +37,9 @@ load_datasets <- function () {
     path <- get_filenames(file)
     if (file.exists(path$resultfile)) {
       datasets[[path$datasetname]] <- read.csv.file(path$resultfile)
-      load(path$get_tempfile('TOP3classifiers', '.RData'))
-      datasets[[path$datasetname]] <- cbind(datasets[[path$datasetname]], classifiers)
-      colnames(datasets[[path$datasetname]])[ncol(datasets[[path$datasetname]])] <- "realacc"
     }
   }
-  
+
   datasets
 }
 
@@ -57,11 +56,25 @@ generate_metabase <- function (results) {
   names(ini) <- names(results)
   names(fim) <- names(results)
   
-  metabase <- metabase[!colnames(metabase) %in% c("Cls", "Nom", "Lda", "Nb", "Nn", "auc", "accuracy", "topauc")]
+  metabase <- metabase[!colnames(metabase) %in% 
+      c("Cls", "Num", "Nom", "Lda", "Nb", "Nn", "auc", "accuracy", "topauc", "Nlbst",
+        "NumRate",  "NomRate",	"SymMin",	"SymMax",	"SymMean",	"SymSd",	"SymSum",
+        "ClMean", "Fnd", "AtrEnt", "NAtrEnt",
+        "Spl", "Dim",
+        "Atr",
+        "NSlbst", "Mfreq", "LCard", "LDen", "Mir", "Scl")]
   colnames(metabase)[ncol(metabase)] <- "class"
   metabase[,ncol(metabase)] <- as.factor(metabase[,ncol(metabase)])
- 
-  list(metabase=metabase, ia=ini, ib=fim)
+  
+  lvs <- levels(metabase[,ncol(metabase)])
+  lclassifiers <- list()
+  for(file in FILES) {
+    path <- get_filenames(file)
+    load(path$get_tempfile('TOP3classifiers', '.RData')) #classifiers
+    lclassifiers[[path$datasetname]] <- factor(classifiers, levels=lvs)
+  }
+  
+  list(metabase=metabase, realbest=lclassifiers, ia=ini, ib=fim)
 }
 
 load_datasets_info <- function () {
@@ -77,16 +90,17 @@ load_datasets_info <- function () {
 
 generate_infographics <- function (results) {
   ret <- list()
-  for (metric in c("Accuracy", "SubsetAccuracy", "FMeasure", "HammingLoss")) {
+  methods <- c("SVM", "RANDOM", "TOP3")
+  for (metric in c("Accuracy", "SubsetAccuracy")) { #, "FMeasure", "HammingLoss"
     data <- matrix(
-      rep(0, length(names(results)) * 4), ncol=4,
-      dimnames=list(names(results), c("SVM", "MY", "TOP3", "ALL"))
+      rep(0, length(names(results)) * length(methods)), ncol=length(methods),
+      dimnames=list(names(results), methods)
     )
     for (dsname in names(results)) {
-      data[dsname,] <- results[[dsname]][c("SVM", "AUC", "TOP3", "ALL"), metric]
-      data[dsname,"MY"] <- max(results[[dsname]][c("AUC", "ACC"), metric]) #select the better result (auc or acc)
-      if (metric == "HammingLoss")
-        data[dsname,"MY"] <- min(results[[dsname]][c("AUC", "ACC"), metric]) #select the better result (auc or acc)
+      data[dsname,] <- results[[dsname]][methods, metric]
+      #data[dsname,"MY"] <- max(results[[dsname]][c("AUC", "ACC"), metric]) #select the better result (auc or acc)
+      #if (metric == "HammingLoss")
+      #  data[dsname,"MY"] <- min(results[[dsname]][c("AUC", "ACC"), metric]) #select the better result (auc or acc)
     }
     ret[[metric]] <- data
   }
@@ -154,10 +168,10 @@ show_plot_infocomparation <- function (datagraphics) {
   for(metric in names(datagraphics)) {
     df <- melt(datagraphics[[metric]])
     g <- ggplot(data=df, aes(x=Var1, y=value, group=Var2))
-    g <- g + geom_line(aes(colour=Var2, linetype=Var2), size=1)
+    g <- g + geom_line(aes(linetype=Var2, colour=Var2), size=2) 
     g <- g + geom_point()
-    #g <- g + scale_fill_hue(name="Classifiers")
-    #g <- g + scale_linetype_discrete(name="Classifiers")
+    g <- g + scale_fill_hue(name="Classifiers")
+    g <- g + scale_linetype_discrete(name="Classifiers")
     g <- g + ggtitle(paste(metric, "Comparative")) + ylab(metric) + xlab("Datasets")
     g <- g + theme(axis.text.x = element_text(angle = 45, hjust = 1))
     plot(g)
