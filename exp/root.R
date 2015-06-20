@@ -13,7 +13,7 @@ root <- function(file) {
     }
 
     #remove unique columns and labels with lower than 10 examples of each value
-    traindata <- remove_unique_attributes(traindata, 10) #this row may throw an error when all labels have lower than 10 values for each label
+    traindata <- remove_unique_attributes(traindata, 1) #this row may throw an error when all labels have lower than 10 values for each label
     
     #Break in L datasets for Binary Relevance
     datasets <- lapply(mldr_transform(traindata), convertClassColumn)
@@ -21,18 +21,19 @@ root <- function(file) {
     #Extract general features
     cat("  - Extract features for meta learning", now(), '\n')
     featurefile <- path$get_tempfile('features', '.RData')
-    if (!file.exists(featurefile)) {
-      if (CORES > 1) {
-        features <- as.data.frame(do.call("rbind", mclapply(datasets, characterization, path, mc.cores=min(CORES, length(datasets))))) 
-      }
-      else {
-        features <- as.data.frame(do.call("rbind", lapply(datasets, characterization, path)))
-      }
-      save(features, file=featurefile)
-    }
-    else {
-      load(featurefile)
-    }
+#     if (!file.exists(featurefile)) {
+       if (CORES > 1) {
+         features <- as.data.frame(do.call("rbind", mclapply(datasets, characterization, path, mc.cores=min(CORES, length(datasets))))) 
+       }
+       else {
+         features <- as.data.frame(do.call("rbind", lapply(datasets, characterization, path)))
+       }
+#       save(features, file=featurefile)
+#     }
+#     else {
+#       load(featurefile)
+#     }
+    return();
     rownames(features) <- rownames(traindata$labels)
 
     cat("  - Running for metabase generation",now(), '\n')
