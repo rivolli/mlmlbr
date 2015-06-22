@@ -5,7 +5,7 @@
 root <- function(file) {
   path <- get_filenames(file)
 
-  if (!file.exists(path$resultfile)) { # && path$datasetname == "flags") {
+  if (file.exists(path$resultfile)){ # && path$datasetname == "flags") {
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     if (is_sparce_data(traindata)) {
@@ -13,7 +13,7 @@ root <- function(file) {
     }
 
     #remove unique columns and labels with lower than 10 examples of each value
-    traindata <- remove_unique_attributes(traindata, 1) #this row may throw an error when all labels have lower than 10 values for each label
+    traindata <- remove_unique_attributes(traindata, 0) #this row may throw an error when all labels have lower than 10 values for each label
     
     #Break in L datasets for Binary Relevance
     datasets <- lapply(mldr_transform(traindata), convertClassColumn)
@@ -33,8 +33,30 @@ root <- function(file) {
 #     else {
 #       load(featurefile)
 #     }
-    return();
-    rownames(features) <- rownames(traindata$labels)
+    rownames(features) <- rownames(traindata$labels)    
+
+    #Multilabel data metafeatures
+    mlfeatures <- data.frame(
+      Nlbst=rep(traindata$measures$num.labelsets, nrow(features)),
+      NSlbst=rep(traindata$measures$num.single.labelsets, nrow(features)),
+      Mfreq=rep(traindata$measures$max.frequency, nrow(features)),
+      LCard=rep(traindata$measures$cardinality, nrow(features)),
+      LDen=rep(traindata$measures$density, nrow(features)),
+      Mir=rep(traindata$measures$meanIR, nrow(features)),
+      Scl=rep(traindata$measures$scumble, nrow(features)),
+      Lfq=rep(0, nrow(features)),
+      IRLbl=rep(0, nrow(features)),
+      LScl=rep(0, nrow(features)),
+      row.names = rownames(features)
+    )
+        
+    for (cls in rownames(mlfeatures)) {
+      mlfeatures[cls, c("Lfq", "IRLbl", "LScl")] <- traindata$labels[cls, c("freq", "IRLbl", "SCUMBLE")]
+    }
+    
+    write.csv(cbind(features, mlfeatures), file=path$get_tempfile('onlyfeatures', '.csv'))
+    return(T);
+    
 
     cat("  - Running for metabase generation",now(), '\n')
     resultfile <- path$get_rdatafile('details')
@@ -69,40 +91,20 @@ root <- function(file) {
       results[[i]]$summary$KNN_7 <- NULL
       results[[i]]$summary$DT <- NULL
       
-      results[[i]]$topauc <- names(which.max(unlist(lapply(results[[i]]$summary, function (m) m["_mean","AUC"]))))
-      results[[i]]$topaccuracy <- names(which.max(unlist(lapply(results[[i]]$summary, function (m) m["_mean","BalancedAccuracy"]))))  
+      results[[i]]$auc <- names(which.max(unlist(lapply(results[[i]]$summary, function (m) m["_mean","AUC"]))))
+      results[[i]]$accuracy <- names(which.max(unlist(lapply(results[[i]]$summary, function (m) m["_mean","BalancedAccuracy"]))))  
     }
 
-    #Multilabel data metafeatures
-    mlfeatures <- data.frame(
-      Nlbst=rep(traindata$measures$num.labelsets, nrow(features)),
-      NSlbst=rep(traindata$measures$num.single.labelsets, nrow(features)),
-      Mfreq=rep(traindata$measures$max.frequency, nrow(features)),
-      LCard=rep(traindata$measures$cardinality, nrow(features)),
-      LDen=rep(traindata$measures$density, nrow(features)),
-      Mir=rep(traindata$measures$meanIR, nrow(features)),
-      Scl=rep(traindata$measures$scumble, nrow(features)),
-      Lfq=rep(0, nrow(features)),
-      IRLbl=rep(0, nrow(features)),
-      LScl=rep(0, nrow(features)),
-      row.names = rownames(features)
-    )
-    
-    for (cls in rownames(mlfeatures)) {
-      mlfeatures[cls, c("Lfq", "IRLbl", "LScl")] <- traindata$labels[cls, c("freq", "IRLbl", "SCUMBLE")]
-    }
-    
     auc <- unlist(lapply(results, function (kpart) kpart$auc))
     accuracy <- unlist(lapply(results, function (kpart) kpart$accuracy))
-    topauc <- unlist(lapply(results, function (kpart) kpart$topauc))
-    topaccuracy <- unlist(lapply(results, function (kpart) kpart$topaccuracy))
-    
-    write.csv(cbind(features, mlfeatures, auc, accuracy, topauc, topaccuracy), file=path$resultfile)
-    rm(traindata, results, features)
+    rownames(features) <- rownames(traindata$labels)
+
+    write.csv(cbind(features, auc, accuracy), file=path$resultfile)
+    rm(path, traindata, results, features)
   }
   
   #Multilabel results
-  if (!file.exists(path$datasetinfo)){ # && path$datasetname != "medical") { #
+  if (!file.exists(path$datasetinfo) && path$datasetname != "medical") { #
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     testdata <- mldr(path$testfile, auto_extension=FALSE, xml_file=path$xmlfile)
