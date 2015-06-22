@@ -5,7 +5,7 @@
 root <- function(file) {
   path <- get_filenames(file)
 
-  if (file.exists(path$resultfile)){ # && path$datasetname == "flags") {
+  if (!file.exists(path$resultfile)){ # && path$datasetname == "flags") {
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     if (is_sparce_data(traindata)) {
@@ -13,7 +13,7 @@ root <- function(file) {
     }
 
     #remove unique columns and labels with lower than 10 examples of each value
-    traindata <- remove_unique_attributes(traindata, 0) #this row may throw an error when all labels have lower than 10 values for each label
+    traindata <- remove_unique_attributes(traindata, 10) #this row may throw an error when all labels have lower than 10 values for each label
     
     #Break in L datasets for Binary Relevance
     datasets <- lapply(mldr_transform(traindata), convertClassColumn)
@@ -21,18 +21,18 @@ root <- function(file) {
     #Extract general features
     cat("  - Extract features for meta learning", now(), '\n')
     featurefile <- path$get_tempfile('features', '.RData')
-#     if (!file.exists(featurefile)) {
+     if (!file.exists(featurefile)) {
        if (CORES > 1) {
          features <- as.data.frame(do.call("rbind", mclapply(datasets, characterization, path, mc.cores=min(CORES, length(datasets))))) 
        }
        else {
          features <- as.data.frame(do.call("rbind", lapply(datasets, characterization, path)))
        }
-#       save(features, file=featurefile)
-#     }
-#     else {
-#       load(featurefile)
-#     }
+       save(features, file=featurefile)
+     }
+     else {
+       load(featurefile)
+     }
     rownames(features) <- rownames(traindata$labels)    
 
     #Multilabel data metafeatures
@@ -54,10 +54,9 @@ root <- function(file) {
       mlfeatures[cls, c("Lfq", "IRLbl", "LScl")] <- traindata$labels[cls, c("freq", "IRLbl", "SCUMBLE")]
     }
     
-    write.csv(cbind(features, mlfeatures), file=path$get_tempfile('onlyfeatures', '.csv'))
-    return(T);
+    features <- cbind(features, mlfeatures)
+    #write.csv(features, file=path$get_tempfile('onlyfeatures', '.csv'))
     
-
     cat("  - Running for metabase generation",now(), '\n')
     resultfile <- path$get_rdatafile('details')
     if (!file.exists(resultfile)) {

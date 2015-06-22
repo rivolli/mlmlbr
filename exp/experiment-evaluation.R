@@ -94,6 +94,9 @@ runningExperimentsEvaluation <- function (traindata, testdata, path) {
   for (i in 1:length(mrandom)) random.results[[i]] <- mrandom[i]
   lresults[["RANDOM"]] <- random.results
   
+  #Prediction Result
+  
+  
   #All Better REAL Result in TOP3
   cat (now(), "Running TOP3\n")
   classifiers <- get_betters_classifiers(list("SVM"=svm.results, "NB"=nb.results, "RF"=rf.results), testdata)

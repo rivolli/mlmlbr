@@ -37,6 +37,7 @@ load_datasets <- function () {
     path <- get_filenames(file)
     if (file.exists(path$resultfile)) {
       datasets[[path$datasetname]] <- read.csv.file(path$resultfile)
+      rownames(datasets[[path$datasetname]]) <- paste(path$datasetname, rownames(datasets[[path$datasetname]]), sep='_')
     }
   }
 
@@ -91,7 +92,9 @@ load_datasets_info <- function () {
 generate_infographics <- function (results) {
   ret <- list()
   methods <- c("SVM", "RANDOM", "TOP3")
-  for (metric in c("Accuracy", "SubsetAccuracy")) { #, "FMeasure", "HammingLoss"
+  for (metric in c("Accuracy", "SubsetAccuracy", "HammingLoss",
+                   "AUC", "FMeasure", "MacroFMeasure", "MicroFMeasure",
+                   "OneError")) {
     data <- matrix(
       rep(0, length(names(results)) * length(methods)), ncol=length(methods),
       dimnames=list(names(results), methods)

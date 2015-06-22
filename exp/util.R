@@ -259,7 +259,7 @@ mresult.as.vector <- function (mresult) {
 }
 
 change_special_chars <- function(str, replaceWith='.') {
-  symbols <- c(' ', "'", '"', '-')
+  symbols <- c(' ', "'", '"', '-', "\\(", "\\)")
   for (s in symbols)
     str <- gsub(s, replaceWith, str)
   str
