@@ -58,7 +58,7 @@ generate_metabase <- function (results) {
   names(fim) <- names(results)
   
   metabase <- metabase[!colnames(metabase) %in% 
-      c("Cls", "Num", "Nom", "Lda", "Nb", "Nn", "auc", "accuracy", "topauc", "Nlbst",
+      c("Cls", "Num", "Nom", "Lda", "Nb", "Nn", "auc", "accuracy", "topaccuracy", "Nlbst",
         "NumRate",  "NomRate",	"SymMin",	"SymMax",	"SymMean",	"SymSd",	"SymSum",
         "ClMean", "Fnd", "AtrEnt", "NAtrEnt",
         "Spl", "Dim",
@@ -91,10 +91,10 @@ load_datasets_info <- function () {
 
 generate_infographics <- function (results) {
   ret <- list()
-  methods <- c("SVM", "RANDOM", "TOP3")
-  for (metric in c("Accuracy", "SubsetAccuracy", "HammingLoss",
-                   "AUC", "FMeasure", "MacroFMeasure", "MicroFMeasure",
-                   "OneError")) {
+  methods <- c("SVM", "ACC", "AUC") #"RANDOM", , "TOP3"
+  for (metric in c("Accuracy", "SubsetAccuracy", "HammingLoss", "FMeasure"
+                   #, "AUC", "MacroFMeasure", "MicroFMeasure","OneError"
+  )) {
     data <- matrix(
       rep(0, length(names(results)) * length(methods)), ncol=length(methods),
       dimnames=list(names(results), methods)
@@ -170,11 +170,11 @@ show_plot_classifiers <- function (data, title) {
 show_plot_infocomparation <- function (datagraphics) {
   for(metric in names(datagraphics)) {
     df <- melt(datagraphics[[metric]])
-    g <- ggplot(data=df, aes(x=Var1, y=value, group=Var2))
-    g <- g + geom_line(aes(linetype=Var2, colour=Var2), size=2) 
-    g <- g + geom_point()
-    g <- g + scale_fill_hue(name="Classifiers")
-    g <- g + scale_linetype_discrete(name="Classifiers")
+    g <- ggplot(data=df, aes(x=Var1, y=value, group=Var2, colour=Var2))
+    g <- g + geom_line(aes(colour=Var2), size=1) #linetype=Var2, 
+    g <- g + geom_point(size=2)
+    #g <- g + scale_fill_hue(name="Classifiers")
+    #g <- g + scale_linetype_discrete(name="Classifiers")
     g <- g + ggtitle(paste(metric, "Comparative")) + ylab(metric) + xlab("Datasets")
     g <- g + theme(axis.text.x = element_text(angle = 45, hjust = 1))
     plot(g)
