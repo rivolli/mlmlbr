@@ -95,7 +95,13 @@ runningExperimentsEvaluation <- function (traindata, testdata, path) {
   lresults[["RANDOM"]] <- random.results
   
   #Prediction Result
-  
+  file=path$get_tempfile('allprediction', '.RData')
+  if (file.exists(file)) {
+    cat (now(), "Running PREDICTIONS\n")
+    load(file) #allpreds
+    predictions <- get_predictions_from_list(allpreds, lresults, testdata)
+    lresults[["PRED"]] <- BR.evaluate(testdata, predictions)
+  }
   
   #All Better REAL Result in TOP3
   cat (now(), "Running TOP3\n")
