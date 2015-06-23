@@ -99,6 +99,7 @@ runningExperimentsEvaluation <- function (traindata, testdata, path) {
   if (file.exists(file)) {
     cat (now(), "Running PREDICTIONS\n")
     load(file) #allpreds
+    names(allpreds) <- change_special_chars(names(allpreds))
     predictions <- get_predictions_from_list(allpreds, lresults, testdata)
     lresults[["PRED"]] <- BR.evaluate(testdata, predictions)
   }
@@ -149,7 +150,12 @@ get_predictions_from_list <- function (classifiers, lresults, testdata) {
   predictions <- matrix(nrow=testdata$measures$num.instances, ncol=testdata$measures$num.labels)
   colnames(predictions) <- rownames(testdata$labels)
   for (classname in rownames(testdata$labels)) {
-    predictions[,classname] <- attr(lresults[[classifiers[classname]]], "predictions")[,classname]
+    if (is.na(classifiers[classname])) {
+      predictions[,classname] <- rep(0, testdata$measures$num.instances)
+    }
+    else {
+      predictions[,classname] <- attr(lresults[[classifiers[classname]]], "predictions")[,classname]  
+    }
   }
   predictions
 }
