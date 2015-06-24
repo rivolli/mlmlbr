@@ -81,17 +81,25 @@ runningExperimentsEvaluation <- function (traindata, testdata, path) {
   lresults[["ACC"]] <- BR.evaluate(testdata, predictions)
 
   #Random Result (only TOP3 classifiers)
-  cat (now(), "Running RANDOM\n")
-  totals <- matrix(nrow = 10, ncol = 19)
-  for (i in 1:10) { 
-    #Running 10 times and use the mean of metrics
-    classifiers <- sapply(rownames(testdata$labels), function (j) sample(c("SVM", "RF", "NB"))[1])
-    predictions <- get_predictions_from_list(classifiers, lresults, testdata)
-    random.results <- BR.evaluate(testdata, predictions)
-    totals[i,] <- mresult.as.vector(random.results)
+  resultfile <- path$get_tempfile('RAND', '.RData')
+  if (file.exists(resultfile)) {
+    cat (now(), "Loading RANDOM\n")
+    load(resultfile)
   }
-  mrandom <- apply(totals, 2, mean)
-  for (i in 1:length(mrandom)) random.results[[i]] <- mrandom[i]
+  else {
+    cat (now(), "Running RANDOM\n")
+    totals <- matrix(nrow = 10, ncol = 19)
+    for (i in 1:5) { 
+      #Running 10 times and use the mean of metrics
+      classifiers <- sapply(rownames(testdata$labels), function (j) sample(c("SVM", "RF", "NB"))[1])
+      predictions <- get_predictions_from_list(classifiers, lresults, testdata)
+      random.results <- BR.evaluate(testdata, predictions)
+      totals[i,] <- mresult.as.vector(random.results)
+    }
+    mrandom <- apply(totals, 2, mean)
+    for (i in 1:length(mrandom)) random.results[[i]] <- mrandom[i]
+    save(random.results, file=resultfile)
+  }
   lresults[["RANDOM"]] <- random.results
   
   #Prediction Result

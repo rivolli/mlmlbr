@@ -18,7 +18,8 @@ run_metabase <- function () {
      mtlres <- lapply(names(results), runMTLclassify, metainfo)
    }
    names(mtlres) <- names(results)
-   #tbls <- do.call(rbind, mtlres)
+   tbls <- do.call(rbind, mtlres)
+   write.csv(tbls, "metabase.resuls.csv")
     
 #   datagraphics <- generate_datagraphics(results)
 #   show_plot_classifiers(datagraphics$methodsauc, "AUC Results")
@@ -37,6 +38,13 @@ load_datasets <- function () {
     path <- get_filenames(file)
     if (file.exists(path$resultfile)) {
       datasets[[path$datasetname]] <- read.csv.file(path$resultfile)
+      
+      load(path$get_tempfile('TOP3classifiers', '.RData')) #classifiers
+      map <- change_special_chars(rownames(datasets[[path$datasetname]]))
+      names(map) <- rownames(datasets[[path$datasetname]])
+      real <- factor(classifiers, levels=c("SVM", "NB", "RF"))
+      
+      datasets[[path$datasetname]][,"real"] <- real[map]
       rownames(datasets[[path$datasetname]]) <- paste(path$datasetname, rownames(datasets[[path$datasetname]]), sep='_')
     }
   }
@@ -58,12 +66,16 @@ generate_metabase <- function (results) {
   names(fim) <- names(results)
   
   metabase <- metabase[!colnames(metabase) %in% 
-      c("Cls", "Num", "Nom", "Lda", "Nb", "Nn", "auc", "accuracy", "topaccuracy", "Nlbst",
-        "NumRate",  "NomRate",	"SymMin",	"SymMax",	"SymMean",	"SymSd",	"SymSum",
-        "ClMean", "Fnd", "AtrEnt", "NAtrEnt",
-        "Spl", "Dim",
-        "Atr",
-        "NSlbst", "Mfreq", "LCard", "LDen", "Mir", "Scl")]
+      c(
+           "Cls", "Num", "Nom", "Lda", "Nb", "Nn"
+         , "auc", "accuracy", "topauc", "topaccuracy"
+         , "ClMean", "Fnd", "SymMin", "NAtrEnt"
+         , "Nlbst", "NumRate", "NomRate", "SymMin",	"SymMax",	"SymMean",	"SymSd",	"SymSum"
+         , "Fnd", "AtrEnt"
+         , "Spl", "Dim"
+         , "Atr"
+         , "NSlbst", "Mfreq", "LCard", "LDen", "Mir", "Scl"
+      )]
   colnames(metabase)[ncol(metabase)] <- "class"
   metabase[,ncol(metabase)] <- as.factor(metabase[,ncol(metabase)])
   
@@ -91,7 +103,7 @@ load_datasets_info <- function () {
 
 generate_infographics <- function (results) {
   ret <- list()
-  methods <- c("SVM", "ACC", "AUC") #"RANDOM", , "TOP3"
+  methods <- c("SVM", "PRED") #"RANDOM", , "TOP3"
   for (metric in c("Accuracy", "SubsetAccuracy", "HammingLoss", "FMeasure"
                    #, "AUC", "MacroFMeasure", "MicroFMeasure","OneError"
   )) {
@@ -171,8 +183,9 @@ show_plot_infocomparation <- function (datagraphics) {
   for(metric in names(datagraphics)) {
     df <- melt(datagraphics[[metric]])
     g <- ggplot(data=df, aes(x=Var1, y=value, group=Var2, colour=Var2))
-    g <- g + geom_line(aes(colour=Var2), size=1) #linetype=Var2, 
+    g <- g + geom_line(aes(linetype=Var2, colour=Var2), size=1)
     g <- g + geom_point(size=2)
+    #g <- g + geom_text(aes(label=value),hjust=0, vjust=0)
     #g <- g + scale_fill_hue(name="Classifiers")
     #g <- g + scale_linetype_discrete(name="Classifiers")
     g <- g + ggtitle(paste(metric, "Comparative")) + ylab(metric) + xlab("Datasets")
