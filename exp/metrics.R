@@ -114,7 +114,7 @@ binary.evaluate <- function (mtx) {
     Precision   = metrics.precision(mtx),
     Recall      = metrics.recall(mtx),
     Specificity = metrics.specificity(mtx),
-    F1          = metrics.accuracy(mtx),
+    F1          = metrics.F1(mtx),
     BalancedAccuracy = metrics.balancedAccuracy(mtx)
   ));
 }

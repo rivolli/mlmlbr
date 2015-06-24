@@ -26,7 +26,6 @@ runMTLclassify <- function (dsname, metainfo) {
   path <- get_filenames(paste('dataset/', dsname, '/', dsname, '-train.arff', sep=''))
   if (length(metainfo$realbest[[dsname]]) != length(preds)) {
     alldata <- read.csv.file(path$get_tempfile('onlyfeatures', '.csv'))[,colnames(metainfo$metabase[testIndex,-labelIdx])]
-    
     allpreds <- predict(model, alldata)
     names(allpreds) <- rownames(alldata)
     

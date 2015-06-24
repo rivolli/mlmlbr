@@ -82,14 +82,14 @@ runningExperimentsEvaluation <- function (traindata, testdata, path) {
 
   #Random Result (only TOP3 classifiers)
   resultfile <- path$get_tempfile('RAND', '.RData')
-  if (file.exists(resultfile)) {
+  if (!file.exists(resultfile)) {
     cat (now(), "Loading RANDOM\n")
     load(resultfile)
   }
   else {
     cat (now(), "Running RANDOM\n")
     totals <- matrix(nrow = 10, ncol = 19)
-    for (i in 1:5) { 
+    for (i in 1:10) { 
       #Running 10 times and use the mean of metrics
       classifiers <- sapply(rownames(testdata$labels), function (j) sample(c("SVM", "RF", "NB"))[1])
       predictions <- get_predictions_from_list(classifiers, lresults, testdata)

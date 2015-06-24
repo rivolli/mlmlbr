@@ -13,7 +13,6 @@ run = function() {
   
   results <- lapply(FILES, function(file) {
     root(file);
-    
 #     #Generate dataset info
 #     path <- get_filenames(file)
 #     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)

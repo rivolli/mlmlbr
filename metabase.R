@@ -29,6 +29,12 @@ run_metabase <- function () {
    infographics <- generate_infographics(infores)
    show_plot_infocomparation(infographics)
 
+   for (measure in c("Accuracy", "AveragePrecision", "FMeasure", "HammingLoss", "SubsetAccuracy", "MacroFMeasure", "MicroFMeasure")) {
+     comparative <- matrix(unlist(lapply(infores, function (metrics) metrics[c("SVM", "PRED"),measure])), ncol=2, byrow=T)
+      browser();
+     cat(measure, wilcoxon(comparative[,1], comparative[,2], .95), "\n")
+   }
+
   TRUE
 }
 
@@ -103,7 +109,7 @@ load_datasets_info <- function () {
 
 generate_infographics <- function (results) {
   ret <- list()
-  methods <- c("SVM", "PRED") #"RANDOM", , "TOP3"
+  methods <- c("SVM", "PRED") # , "TOP3"
   for (metric in c("Accuracy", "SubsetAccuracy", "HammingLoss", "FMeasure"
                    #, "AUC", "MacroFMeasure", "MicroFMeasure","OneError"
   )) {
