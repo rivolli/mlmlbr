@@ -31,11 +31,7 @@ run_metabase <- function () {
 
    for (measure in c("Accuracy", "AUC", "Recall", "Precision", "AveragePrecision", "FMeasure", "HammingLoss", "SubsetAccuracy", "MacroFMeasure", "MicroFMeasure")) {
      comparative <- matrix(unlist(lapply(infores, function (metrics) metrics[c("SVM", "PRED"),measure])), ncol=2, byrow=T)
-<<<<<<< HEAD
-     cat(measure, wilcoxon(comparative[,1], comparative[,2], .95), "\n")
-=======
      cat(measure, "SVM:", mean(comparative[,1]), "MTL:", mean(comparative[,2]), wilcoxon(comparative[,1], comparative[,2], .95), "\n")
->>>>>>> c8669ffd93653a801bc129a3e99c27bf54d84be4
    }
 
   TRUE
