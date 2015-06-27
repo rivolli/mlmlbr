@@ -19,8 +19,9 @@ run_metabase <- function () {
    }
    names(mtlres) <- names(results)
    tbls <- do.call(rbind, mtlres)
+   cat("Accuracy: ", 1 - sum(apply(tbls, 1, function (row) row["error"] * row["tests"])) / sum(tbls[,"tests"]), "\n")
    write.csv(tbls, "metabase.resuls.csv")
-    
+    return();
    datagraphics <- generate_datagraphics(results)
    #show_plot_classifiers(datagraphics$methodsauc, "AUC Results")
    show_plot_classifiers(datagraphics$methodsacc, "Accuracy Results")
@@ -76,9 +77,9 @@ generate_metabase <- function (results) {
          , "auc", "accuracy", "topauc", "topaccuracy"
          , "ClMean", "Fnd", "SymMin", "NAtrEnt"
          , "Nlbst", "NumRate", "NomRate", "SymMin",	"SymMax",	"SymMean",	"SymSd",	"SymSum"
-         , "Fnd", "AtrEnt"
-         , "Spl", "Dim"
-         , "Atr"
+         #, "Fnd", "AtrEnt"
+         #, "Spl", "Dim"
+         #, "Atr"
          , "NSlbst", "Mfreq", "LCard", "LDen", "Mir", "Scl"
       )]
   colnames(metabase)[ncol(metabase)] <- "class"
