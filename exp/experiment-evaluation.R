@@ -121,7 +121,7 @@ runningExperimentsEvaluation <- function (traindata, testdata, path) {
   
   #All Better Result in All classifiers
   cat (now(), "Running ALL\n")
-  classifiers <- get_betters_classifiers(lresults), testdata)
+  classifiers <- get_betters_classifiers(lresults, testdata)
   predictions <- get_predictions_from_list(classifiers, lresults, testdata)
   #predictions <- get_predictions_from_csv(NULL, lresults, testdata)
   lresults[["ALL"]] <- BR.evaluate(testdata, predictions)
