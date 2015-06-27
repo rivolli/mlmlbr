@@ -21,9 +21,9 @@ run_metabase <- function () {
    tbls <- do.call(rbind, mtlres)
    write.csv(tbls, "metabase.resuls.csv")
     
-#   datagraphics <- generate_datagraphics(results)
-#   show_plot_classifiers(datagraphics$methodsauc, "AUC Results")
-#   show_plot_classifiers(datagraphics$methodsacc, "Accuracy Results")
+   datagraphics <- generate_datagraphics(results)
+   #show_plot_classifiers(datagraphics$methodsauc, "AUC Results")
+   show_plot_classifiers(datagraphics$methodsacc, "Accuracy Results")
      
    infores <- load_datasets_info()
    infographics <- generate_infographics(infores)
@@ -31,7 +31,6 @@ run_metabase <- function () {
 
    for (measure in c("Accuracy", "AveragePrecision", "FMeasure", "HammingLoss", "SubsetAccuracy", "MacroFMeasure", "MicroFMeasure")) {
      comparative <- matrix(unlist(lapply(infores, function (metrics) metrics[c("SVM", "PRED"),measure])), ncol=2, byrow=T)
-      browser();
      cat(measure, wilcoxon(comparative[,1], comparative[,2], .95), "\n")
    }
 
@@ -147,7 +146,7 @@ generate_datagraphics <- function (results) {
       
     }
 
-    classifieracc <- table(results[[dsname]][,"topaccuracy"])
+    classifieracc <- table(results[[dsname]][,"real"]) #topaccuracy
     for (methods in names(classifieracc)) {
       #if (methods %in% c("KNN_1", "KNN_3", "KNN_5", "KNN_7")) {
       #  dfacc[dsname, "KNN"] <- dfacc[dsname, "KNN"] + classifieracc[methods]
