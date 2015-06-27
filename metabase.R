@@ -44,10 +44,10 @@ load_datasets <- function () {
     if (file.exists(path$resultfile)) {
       datasets[[path$datasetname]] <- read.csv.file(path$resultfile)
       
-      load(path$get_tempfile('TOP3classifiers', '.RData')) #classifiers
+      load(path$get_tempfile('ALLclassifiers', '.RData')) #classifiers
       map <- change_special_chars(rownames(datasets[[path$datasetname]]))
       names(map) <- rownames(datasets[[path$datasetname]])
-      real <- factor(classifiers, levels=c("SVM", "NB", "RF"))
+      real <- factor(classifiers, levels=c("SVM", "NB", "RF", "KNN_3")) # "DT", "KNN_1", "KNN_3", "KNN_5", "KNN_7"))
       
       datasets[[path$datasetname]][,"real"] <- real[map]
       rownames(datasets[[path$datasetname]]) <- paste(path$datasetname, rownames(datasets[[path$datasetname]]), sep='_')
@@ -128,9 +128,10 @@ generate_infographics <- function (results) {
 }
 
 generate_datagraphics <- function (results) {
+  methods <- c("SVM", "NB", "RF", "KNN_3") #"DT", "KNN_1", "KNN_3", "KNN_5", "KNN_7")
   dfauc <- matrix(
-    rep(0, (length(names(results))+1) * 3), ncol=3,
-    dimnames=list(c(names(results), c("All")), c("SVM", "NB", "RF"))
+    rep(0, (length(names(results))+1) * length(methods)), ncol=length(methods),
+    dimnames=list(c(names(results), c("All")), methods)
   )
   
   dfacc <- dfauc
