@@ -82,7 +82,7 @@ runningExperimentsEvaluation <- function (traindata, testdata, path) {
 
   #Random Result (only TOP3 classifiers)
   resultfile <- path$get_tempfile('RAND', '.RData')
-  if (!file.exists(resultfile)) {
+  if (file.exists(resultfile)) {
     cat (now(), "Loading RANDOM\n")
     load(resultfile)
   }

@@ -8,13 +8,27 @@ runMTLclassify <- function (dsname, metainfo) {
   model <- RWeka::J48(class ~ ., metainfo$metabase[trainIndex,])
   preds <- predict(model, metainfo$metabase[testIndex,-labelIdx])
   measures <- acc.multi.measures(preds, metainfo$metabase[testIndex,labelIdx])
-  
-  #   class <- metainfo$metabase[,labelIdx]
-  #   svmData <- scale(metainfo$metabase[,-labelIdx])
-  #   metabase <- cbind(as.data.frame(svmData), class)
-  #   smodel <- svm(svmData[trainIndex,], metabase[trainIndex,ncol(metabase)])
-  #   npreds <- predict(smodel, svmData[testIndex,])
-  #   measures <- acc.multi.measures(npreds, metabase[testIndex,labelIdx])
+
+# ENSEMBLE OF CLASSIFIERS FOR METALEARNING
+#   #Random Forest
+#   model2 <- randomForest(metainfo$metabase[trainIndex,-labelIdx], metainfo$metabase[trainIndex,labelIdx])
+#   preds2 <- predict(model2, metainfo$metabase[testIndex,-labelIdx])
+#   #measures <- acc.multi.measures(preds, metainfo$metabase[testIndex,labelIdx])
+#   
+#   #SVM
+#   class <- metainfo$metabase[,labelIdx]
+#   svmData <- scale(metainfo$metabase[,-labelIdx])
+#   metabase <- cbind(as.data.frame(svmData), class)
+#   model3 <- svm(svmData[trainIndex,], metabase[trainIndex,ncol(metabase)])
+#   preds3 <- predict(model3, svmData[testIndex,])
+#   #measures <- acc.multi.measures(npreds, metabase[testIndex,labelIdx])
+#   
+#   #KNN 3
+#   preds4 <- knn(metainfo$metabase[trainIndex,-labelIdx], metainfo$metabase[testIndex,-labelIdx], metainfo$metabase[trainIndex,labelIdx], 3)
+#   
+#   allpreds <- cbind(as.character(preds1), as.character(preds2), as.character(preds3), as.character(preds4))
+#   preds <- factor(apply(allpreds, 1, function (row) names(which.max(table(row)))), levels=c("SVM", "NB", "RF"))
+#   #measures <- acc.multi.measures(preds, metabase[testIndex,labelIdx])
   
   measures["tests"] <- length(preds)
   
