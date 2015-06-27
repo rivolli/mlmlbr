@@ -29,10 +29,9 @@ run_metabase <- function () {
    infographics <- generate_infographics(infores)
    show_plot_infocomparation(infographics)
 
-   for (measure in c("Accuracy", "AveragePrecision", "FMeasure", "HammingLoss", "SubsetAccuracy", "MacroFMeasure", "MicroFMeasure")) {
+   for (measure in c("Accuracy", "AUC", "Recall", "Precision", "AveragePrecision", "FMeasure", "HammingLoss", "SubsetAccuracy", "MacroFMeasure", "MicroFMeasure")) {
      comparative <- matrix(unlist(lapply(infores, function (metrics) metrics[c("SVM", "PRED"),measure])), ncol=2, byrow=T)
-      browser();
-     cat(measure, wilcoxon(comparative[,1], comparative[,2], .95), "\n")
+     cat(measure, "SVM:", mean(comparative[,1]), "MTL:", mean(comparative[,2]), wilcoxon(comparative[,1], comparative[,2], .95), "\n")
    }
 
   TRUE
