@@ -21,7 +21,7 @@ run_metabase <- function () {
    tbls <- do.call(rbind, mtlres)
    cat("Accuracy: ", 1 - sum(apply(tbls, 1, function (row) row["error"] * row["tests"])) / sum(tbls[,"tests"]), "\n")
    write.csv(tbls, "metabase.resuls.csv")
-    return();
+    
    datagraphics <- generate_datagraphics(results)
    #show_plot_classifiers(datagraphics$methodsauc, "AUC Results")
    show_plot_classifiers(datagraphics$methodsacc, "Accuracy Results")
