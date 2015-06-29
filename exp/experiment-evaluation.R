@@ -103,27 +103,26 @@ runningExperimentsEvaluation <- function (traindata, testdata, path) {
   lresults[["RANDOM"]] <- random.results
   
   #Prediction Result
-  file=path$get_tempfile('allprediction', '.RData')
-  if (file.exists(file)) {
-    cat (now(), "Running PREDICTIONS\n")
-    load(file) #allpreds
-    names(allpreds) <- change_special_chars(names(allpreds))
-    predictions <- get_predictions_from_list(allpreds, lresults, testdata)
-    lresults[["PRED"]] <- BR.evaluate(testdata, predictions)
-  }
+  #file=path$get_tempfile('allprediction', '.RData')
+  #if (file.exists(file)) {
+  #  cat (now(), "Running PREDICTIONS\n")
+  #  load(file) #allpreds
+  #  names(allpreds) <- change_special_chars(names(allpreds))
+  #  predictions <- get_predictions_from_list(allpreds, lresults, testdata)
+  #  lresults[["PRED"]] <- BR.evaluate(testdata, predictions)
+  #}
   
   #All Better REAL Result in TOP3
   cat (now(), "Running TOP3\n")
-  #classifiers <- get_betters_classifiers(list("SVM"=svm.results, "NB"=nb.results, "RF"=rf.results), testdata)
-  classifiers <- get_betters_classifiers_by_metric(list("SVM"=svm.results, "NB"=nb.results, "RF"=rf.results), testdata, "Balanced Accuracy")
+  #classifiers <- get_betters_classifiers(list("SVM"=svm.results, "NB"=nb.results, "RF"=rf.results), testdata)  
+  classifiers <- get_betters_classifiers_by_metric(list("SVM"=svm.results, "KNN_3"=lresults[["KNN_3"]], "RF"=rf.results), testdata, "Balanced Accuracy")
   predictions <- get_predictions_from_list(classifiers, lresults, testdata)
   lresults[["TOP3"]] <- BR.evaluate(testdata, predictions)
   save(classifiers, file=path$get_tempfile('TOP3classifiers', '.RData'))
   
   #All Better Result in All classifiers
   cat (now(), "Running ALL\n")
-  #classifiers <- get_betters_classifiers(list("SVM"=svm.results, "NB"=nb.results, "RF"=rf.results, "KNN_3"=lresults[["KNN_3"]]), testdata)
-  classifiers <- get_betters_classifiers_by_metric(list("SVM"=svm.results, "NB"=nb.results, "RF"=rf.results, "KNN_3"=lresults[["KNN_3"]]), testdata, "Balanced Accuracy")
+  classifiers <- get_betters_classifiers_by_metric(lresults, testdata, "Balanced Accuracy")
   predictions <- get_predictions_from_list(classifiers, lresults, testdata)
   lresults[["ALL"]] <- BR.evaluate(testdata, predictions)
   save(classifiers, file=path$get_tempfile('ALLclassifiers', '.RData'))
@@ -184,16 +183,22 @@ get_betters_classifiers <- function (lresults, testdata) {
 get_betters_classifiers_by_metric <- function (lresults, testdata, metricname) {
   classifiers <- c()
   for (classname in rownames(testdata$labels)) {
-    results <- lapply(lresults, function (res) {
-      real <- factor(attr(res, "predictions")[,classname], levels=c(0,1))
-      predicted <- factor(testdata$dataset[,classname], levels=c(0,1))
-      measures <- confusionMatrix(predicted, real, '1')
-      if (metricname %in% names(measures$overall))
-        return(measures$overall[metricname])
-      else
-        return(measures$byClass[metricname])
-    })
+    real <- factor(testdata$dataset[,classname], levels=c(0,1))
+    if (length(unique(real)) > 1) {
+      results <- lapply(lresults, function (res) {
+        predicted <- factor(attr(res, "predictions")[,classname], levels=c(0,1))
+        measures <- confusionMatrix(predicted, real, '1')
+        if (metricname %in% names(measures$overall))
+          return(measures$overall[metricname])
+        else
+          return(measures$byClass[metricname])
+      })
+    }
+    else {
+      results <- lapply(lresults, function (res) sum(attr(res, "predictions")[,classname] == testdata$dataset[,classname]))
+    }
     classifiers[classname] <- names(which.max(results))
   }
+  
   classifiers
 }

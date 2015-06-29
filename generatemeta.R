@@ -15,10 +15,13 @@ generate_meta = function() {
   metabase <- dataset <- do.call("rbind", lapply(FILES, function(file) {
     path <- get_filenames(file)
     alldata <- read.csv.file(path$get_tempfile('onlyfeatures', '.csv'))
-    rownames(alldata) <- paste(path$datasetname, change_special_chars(rownames(alldata)), sep='_')
+    labels <- rownames(alldata)
+    rownames(alldata) <- paste(path$datasetname, change_special_chars(labels), sep='_')
+    alldata[,"datasetname"] <- path$datasetname
+    alldata[,"labelname"] <- labels
     alldata
   }));
-  write.csv(metabase, file='0metabase.csv')
+  write.csv(metabase, file='results/000 - metabase.csv')
   
   #Generate targets results
   lapply(FILES, function(file) {
@@ -32,8 +35,6 @@ generate_meta = function() {
 #         item$BASELINE[i, "Accuracy"] * N
 #       }
 #     })
-#     
-    browser()
   })
   
   cat("\ndone:", now(), "\n")

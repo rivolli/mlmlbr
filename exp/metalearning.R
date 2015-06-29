@@ -37,7 +37,9 @@ runMTLclassify <- function (dsname, metainfo) {
    cat(dsname, unlist(debug), "\n")
    
    allpreds <- cbind(as.character(preds), as.character(preds1), as.character(preds2), as.character(preds3), as.character(preds4))
-   predsensemble <- factor(apply(allpreds, 1, function (row) names(which.max(table(row)))), levels=c("SVM", "NB", "RF", "KNN_3"))
+   allpreds <- cbind(as.character(preds1), as.character(preds2), as.character(preds3), as.character(preds4))
+   lclassifiers <- c("SVM", "NB", "RF") #, "KNN_3"
+   predsensemble <- factor(apply(allpreds, 1, function (row) names(which.max(table(row)))), levels=lclassifiers)
    measures <- acc.multi.measures(predsensemble, metabase[testIndex,labelIdx])
   #measures <- acc.multi.measures(preds, metabase[testIndex,labelIdx])
   measures["tests"] <- length(preds)
@@ -58,7 +60,7 @@ runMTLclassify <- function (dsname, metainfo) {
     preds4 <- knn(metainfo$metabase[trainIndex,-labelIdx], alldata, metainfo$metabase[trainIndex,labelIdx], 26)
     preds1 <- predict(model1, alldata)
     allpreds <- cbind(as.character(preds), as.character(preds1), as.character(preds2), as.character(preds3), as.character(preds4))
-    allpreds <- factor(apply(allpreds, 1, function (row) names(which.max(table(row)))), levels=c("SVM", "NB", "RF", "KNN_3"))
+    allpreds <- factor(apply(allpreds, 1, function (row) names(which.max(table(row)))), levels=lclassifiers)
     names(allpreds) <- rownames(alldata)
     
     measures2 <- acc.multi.measures(allpreds, metainfo$realbest[[dsname]][change_special_chars(rownames(alldata))])    
