@@ -70,15 +70,15 @@ runningExperimentsEvaluation <- function (traindata, testdata, path) {
   
   datasetresult <- read.csv.file(path$resultfile)
   
-  #All Better Result AUC
-  cat (now(), "Running AUC\n")
-  predictions <- get_predictions_from_csv(datasetresult, lresults, testdata, "topauc");
-  lresults[["AUC"]] <- BR.evaluate(testdata, predictions)
-  
-  #All Better Result ACC
-  cat (now(), "Running ACC\n")
-  predictions <- get_predictions_from_csv(datasetresult, lresults, testdata, "topaccuracy");
-  lresults[["ACC"]] <- BR.evaluate(testdata, predictions)
+#   #All Better Result AUC
+#   cat (now(), "Running AUC\n")
+#   predictions <- get_predictions_from_csv(datasetresult, lresults, testdata, "topauc");
+#   lresults[["AUC"]] <- BR.evaluate(testdata, predictions)
+#   
+#   #All Better Result ACC
+#   cat (now(), "Running ACC\n")
+#   predictions <- get_predictions_from_csv(datasetresult, lresults, testdata, "topaccuracy");
+#   lresults[["ACC"]] <- BR.evaluate(testdata, predictions)
 
   #Random Result (only TOP3 classifiers)
   resultfile <- path$get_tempfile('RAND', '.RData')
@@ -112,17 +112,17 @@ runningExperimentsEvaluation <- function (traindata, testdata, path) {
   #  lresults[["PRED"]] <- BR.evaluate(testdata, predictions)
   #}
   
+  metric <- "Accuracy"
   #All Better REAL Result in TOP3
   cat (now(), "Running TOP3\n")
-  #classifiers <- get_betters_classifiers(list("SVM"=svm.results, "NB"=nb.results, "RF"=rf.results), testdata)  
-  classifiers <- get_betters_classifiers_by_metric(list("SVM"=svm.results, "KNN_3"=lresults[["KNN_3"]], "RF"=rf.results), testdata, "Balanced Accuracy")
+  classifiers <- get_betters_classifiers_by_metric(list("SVM"=svm.results, "KNN_3"=lresults[["KNN_3"]], "RF"=rf.results), testdata, metric)
   predictions <- get_predictions_from_list(classifiers, lresults, testdata)
   lresults[["TOP3"]] <- BR.evaluate(testdata, predictions)
   save(classifiers, file=path$get_tempfile('TOP3classifiers', '.RData'))
   
   #All Better Result in All classifiers
   cat (now(), "Running ALL\n")
-  classifiers <- get_betters_classifiers_by_metric(lresults, testdata, "Balanced Accuracy")
+  classifiers <- get_betters_classifiers_by_metric(lresults, testdata, metric)
   predictions <- get_predictions_from_list(classifiers, lresults, testdata)
   lresults[["ALL"]] <- BR.evaluate(testdata, predictions)
   save(classifiers, file=path$get_tempfile('ALLclassifiers', '.RData'))
