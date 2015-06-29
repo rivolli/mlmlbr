@@ -118,6 +118,7 @@ acc.multi.measures = function(pred, test) {
 	idx = matrix(seq(1:nrow(confusion.matrix)),nrow(confusion.matrix),2)
 	final.matrix["error"] = 1 - (sum(confusion.matrix[idx])/sum(confusion.matrix))
 	final.matrix[c("precision", "recall", "fscore")] = apply(mat.res, 2, mean)
+  final.matrix["accuracy"] <- 1 - final.matrix["error"]
   
 	return (final.matrix);
 

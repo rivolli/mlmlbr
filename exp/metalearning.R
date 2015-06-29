@@ -37,8 +37,8 @@ runMTLclassify <- function (dsname, metainfo) {
    cat(dsname, unlist(debug), "\n")
    
    allpreds <- cbind(as.character(preds), as.character(preds1), as.character(preds2), as.character(preds3), as.character(preds4))
-   allpreds <- cbind(as.character(preds1), as.character(preds2), as.character(preds3), as.character(preds4))
-   lclassifiers <- c("SVM", "NB", "RF") #, "KNN_3"
+   #allpreds <- cbind(as.character(preds1), as.character(preds2), as.character(preds3), as.character(preds4))
+   lclassifiers <- c("SVM", "KNN_3", "RF") #, "KNN_3"
    predsensemble <- factor(apply(allpreds, 1, function (row) names(which.max(table(row)))), levels=lclassifiers)
    measures <- acc.multi.measures(predsensemble, metabase[testIndex,labelIdx])
   #measures <- acc.multi.measures(preds, metabase[testIndex,labelIdx])

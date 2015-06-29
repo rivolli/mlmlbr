@@ -21,7 +21,7 @@ run_metabase <- function () {
    tbls <- do.call(rbind, mtlres)
    cat("Accuracy: ", 1 - sum(apply(tbls, 1, function (row) row["error"] * row["tests"])) / sum(tbls[,"tests"]), "\n")
    write.csv(tbls, "metabase.resuls.csv")
-    
+  
    datagraphics <- generate_datagraphics(results)
    #show_plot_classifiers(datagraphics$methodsauc, "AUC Results")
    show_plot_classifiers(datagraphics$methodsacc, "Accuracy Results")
@@ -48,7 +48,7 @@ load_datasets <- function () {
       load(path$get_tempfile('TOP3classifiers', '.RData')) #classifiers
       map <- change_special_chars(rownames(datasets[[path$datasetname]]))
       names(map) <- rownames(datasets[[path$datasetname]])#, "KNN_3"
-      real <- factor(classifiers, levels=c("SVM", "NB", "RF")) # "DT", "KNN_1", "KNN_3", "KNN_5", "KNN_7"))
+      real <- factor(classifiers, levels=c("SVM", "KNN_3", "RF")) # "DT", "KNN_1", "KNN_3", "KNN_5", "KNN_7"))
       datasets[[path$datasetname]][,"real"] <- real[map]
       rownames(datasets[[path$datasetname]]) <- paste(path$datasetname, rownames(datasets[[path$datasetname]]), sep='_')
     }
@@ -108,7 +108,7 @@ load_datasets_info <- function () {
 
 generate_infographics <- function (results) {
   ret <- list()
-  methods <- c("SVM", "PRED") # , "TOP3"
+  methods <- c("SVM", "TOP3", "ALL") # , "TOP3"
   for (metric in c("Accuracy", "SubsetAccuracy", "HammingLoss", "FMeasure"
                    #, "AUC", "MacroFMeasure", "MicroFMeasure","OneError"
   )) {
@@ -128,7 +128,7 @@ generate_infographics <- function (results) {
 }
 
 generate_datagraphics <- function (results) {
-  methods <- c("SVM", "NB", "RF", "KNN_3") #"DT", "KNN_1", "KNN_3", "KNN_5", "KNN_7")
+  methods <- c("SVM", "KNN_3", "RF") #"DT", "KNN_1", "KNN_3", "KNN_5", "KNN_7")
   dfauc <- matrix(
     rep(0, (length(names(results))+1) * length(methods)), ncol=length(methods),
     dimnames=list(c(names(results), c("All")), methods)

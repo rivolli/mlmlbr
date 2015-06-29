@@ -16,27 +16,57 @@ generate_meta = function() {
     path <- get_filenames(file)
     alldata <- read.csv.file(path$get_tempfile('onlyfeatures', '.csv'))
     labels <- rownames(alldata)
-    rownames(alldata) <- paste(path$datasetname, change_special_chars(labels), sep='_')
+    nlabels <- change_special_chars(labels)
+    rownames(alldata) <- paste(path$datasetname, nlabels, sep='_')
     alldata[,"datasetname"] <- path$datasetname
     alldata[,"labelname"] <- labels
+    
+    #TOP3
+    load(path$get_tempfile('TOP3classifiers', '.RData')) #classifiers
+    alldata[,"TOP3"] <- classifiers[nlabels]
+    
+    #ALL
+    load(path$get_tempfile('ALLclassifiers', '.RData')) #classifiers
+    alldata[,"ALL"] <- classifiers[nlabels]
+    
     alldata
   }));
   write.csv(metabase, file='results/000 - metabase.csv')
   
-  #Generate targets results
-  lapply(FILES, function(file) {
-    path <- get_filenames(file)
-    load(path$get_rdatafile('details')) #results
-    
-#     labelnames <- change_special_chars(rownames(read.csv.file(path$resultfile)))
-#     nresults <- lapply(results, function (item) {
-#       N <- 100
-#       for (i in 1:10) {
-#         item$BASELINE[i, "Accuracy"] * N
-#       }
-#     })
-  })
+  validation <- c("bibtex", "birds", "CAL500", "corel5k", "emotions", "enron", "flags")
+  metabase[,"class"] <- factor(metabase[,"TOP3"])
   
+  #Generate targets results
+  metrics <- list()
+  fmetrics <- data.frame(methodname=character(), metricname=character(), value=numeric())
+  for(file in FILES) {
+    path <- get_filenames(file)
+    if (!path$datasetname %in% validation) break;
+    
+    cat (" ** ", path$datasetname, " **\n")
+    test <- metabase[,"datasetname"] == path$datasetname
+    train <- !test
+    
+    metrics[[path$datasetname]] <- metaclassifier(metabase, train, test)
+    for (method in names(metrics[[path$datasetname]])) {
+      row <- metrics[[path$datasetname]][[method]]
+      for (measure in names(row)) {
+        thevalue <- metrics[[path$datasetname]][[method]][measure] * sum(test) / nrow(metabase)
+        names(thevalue) <- NULL
+        fmetrics <- rbind(fmetrics, data.frame(methodname=method, metricname=measure, value=thevalue))
+      }
+    }
+  }
+  
+  cat("\n\n---------------------------------------------------------------------\n")
+  for (method <- unique(fmetris[,"methodname"])) {
+    cat(unique(fmetrics[,"metricname"]),"\n")
+    for (measure in unique(fmetrics[,"metricname"])) {
+      
+    }
+  }    
+  cat("---------------------------------------------------------------------\n\n\n")
+   
   cat("\ndone:", now(), "\n")
   TRUE
 }
