@@ -8,28 +8,38 @@ runMTLclassify <- function (dsname, metainfo) {
   model <- RWeka::J48(class ~ ., metainfo$metabase[trainIndex,])
   preds <- predict(model, metainfo$metabase[testIndex,-labelIdx])
   measures <- acc.multi.measures(preds, metainfo$metabase[testIndex,labelIdx])
-
-# ENSEMBLE OF CLASSIFIERS FOR METALEARNING
-#   #Random Forest
-#   model2 <- randomForest(metainfo$metabase[trainIndex,-labelIdx], metainfo$metabase[trainIndex,labelIdx])
-#   preds2 <- predict(model2, metainfo$metabase[testIndex,-labelIdx])
-#   #measures <- acc.multi.measures(preds, metainfo$metabase[testIndex,labelIdx])
-#   
-#   #SVM
-#   class <- metainfo$metabase[,labelIdx]
-#   svmData <- scale(metainfo$metabase[,-labelIdx])
-#   metabase <- cbind(as.data.frame(svmData), class)
-#   model3 <- svm(svmData[trainIndex,], metabase[trainIndex,ncol(metabase)])
-#   preds3 <- predict(model3, svmData[testIndex,])
-#   #measures <- acc.multi.measures(npreds, metabase[testIndex,labelIdx])
-#   
-#   #KNN 3
-#   preds4 <- knn(metainfo$metabase[trainIndex,-labelIdx], metainfo$metabase[testIndex,-labelIdx], metainfo$metabase[trainIndex,labelIdx], 3)
-#   
-#   allpreds <- cbind(as.character(preds1), as.character(preds2), as.character(preds3), as.character(preds4))
-#   preds <- factor(apply(allpreds, 1, function (row) names(which.max(table(row)))), levels=c("SVM", "NB", "RF"))
-#   #measures <- acc.multi.measures(preds, metabase[testIndex,labelIdx])
   
+  debug <- list(DT=1 - measures["error"])
+  
+  #ENSEMBLE OF CLASSIFIERS FOR METALEARNING
+   #Random Forest
+   model2 <- randomForest(metainfo$metabase[trainIndex,-labelIdx], metainfo$metabase[trainIndex,labelIdx])
+   preds2 <- predict(model2, metainfo$metabase[testIndex,-labelIdx])
+   debug[["RF"]] <- 1 - acc.multi.measures(preds2, metainfo$metabase[testIndex,labelIdx])["error"]
+   
+   #SVM
+   class <- metainfo$metabase[,labelIdx]
+   model3 <- svm(metainfo$metabase[trainIndex,-labelIdx], metainfo$metabase[trainIndex,labelIdx], kernel="polynomial", degree=5)
+   preds3 <- predict(model3, metainfo$metabase[testIndex,-labelIdx])
+   debug[["SVM"]] <- 1 - acc.multi.measures(preds3, metainfo$metabase[testIndex,labelIdx])["error"]
+   
+   #KNN 5
+   scaleData <- scale(metainfo$metabase[,-labelIdx])
+   metabase <- cbind(as.data.frame(scaleData), class)
+   preds4 <- knn(metainfo$metabase[trainIndex,-labelIdx], metainfo$metabase[testIndex,-labelIdx], metainfo$metabase[trainIndex,labelIdx], 26)
+   debug[["KNN"]] <- 1 - acc.multi.measures(preds4, metainfo$metabase[testIndex,labelIdx])["error"]
+  
+   #NB
+   model1 <- naiveBayes(metainfo$metabase[trainIndex,-labelIdx], metainfo$metabase[trainIndex,labelIdx], laplace=2)
+   preds1 <- predict(model1, metainfo$metabase[testIndex,-labelIdx])
+   debug[["NB"]] <- 1 - acc.multi.measures(preds1, metainfo$metabase[testIndex,labelIdx])["error"]
+  
+   cat(dsname, unlist(debug), "\n")
+   
+   allpreds <- cbind(as.character(preds), as.character(preds1), as.character(preds2), as.character(preds3), as.character(preds4))
+   predsensemble <- factor(apply(allpreds, 1, function (row) names(which.max(table(row)))), levels=c("SVM", "NB", "RF", "KNN_3"))
+   measures <- acc.multi.measures(predsensemble, metabase[testIndex,labelIdx])
+  #measures <- acc.multi.measures(preds, metabase[testIndex,labelIdx])
   measures["tests"] <- length(preds)
   
   orignlabels <- gsub(paste(dsname, '_', sep=''), '', rownames(metainfo$metabase[testIndex,]))
@@ -40,7 +50,15 @@ runMTLclassify <- function (dsname, metainfo) {
   path <- get_filenames(paste('dataset/', dsname, '/', dsname, '-train.arff', sep=''))
   if (length(metainfo$realbest[[dsname]]) != length(preds)) {
     alldata <- read.csv.file(path$get_tempfile('onlyfeatures', '.csv'))[,colnames(metainfo$metabase[testIndex,-labelIdx])]
-    allpreds <- predict(model, alldata)
+    #allpreds <- predict(model, alldata)
+    #names(allpreds) <- rownames(alldata)
+    preds <- predict(model, alldata)
+    preds2 <- predict(model2, alldata)
+    preds3 <- predict(model3, alldata)
+    preds4 <- knn(metainfo$metabase[trainIndex,-labelIdx], alldata, metainfo$metabase[trainIndex,labelIdx], 26)
+    preds1 <- predict(model1, alldata)
+    allpreds <- cbind(as.character(preds), as.character(preds1), as.character(preds2), as.character(preds3), as.character(preds4))
+    allpreds <- factor(apply(allpreds, 1, function (row) names(which.max(table(row)))), levels=c("SVM", "NB", "RF", "KNN_3"))
     names(allpreds) <- rownames(alldata)
     
     measures2 <- acc.multi.measures(allpreds, metainfo$realbest[[dsname]][change_special_chars(rownames(alldata))])    

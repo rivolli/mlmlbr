@@ -104,7 +104,7 @@ root <- function(file) {
   
   #Multilabel results
   cat ("Second part!!!\n")
-  if (!file.exists(path$datasetinfo)) { #
+  if (!file.exists(path$datasetinfo) || T) { #
     cat('** Reading: ', path$datasetname, now(), '\n')
     traindata <- mldr(path$trainfile, auto_extension=FALSE, xml_file=path$xmlfile)
     testdata <- mldr(path$testfile, auto_extension=FALSE, xml_file=path$xmlfile)

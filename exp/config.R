@@ -14,6 +14,7 @@ library(randomForest);
 library(parallel);
 library(reshape2);
 library(ggplot2);
+library(caret);
 
 # directory
 DIR = getwd();

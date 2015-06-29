@@ -19,11 +19,12 @@ run_metabase <- function () {
    }
    names(mtlres) <- names(results)
    tbls <- do.call(rbind, mtlres)
+   cat("Accuracy: ", 1 - sum(apply(tbls, 1, function (row) row["error"] * row["tests"])) / sum(tbls[,"tests"]), "\n")
    write.csv(tbls, "metabase.resuls.csv")
     
-#   datagraphics <- generate_datagraphics(results)
-#   show_plot_classifiers(datagraphics$methodsauc, "AUC Results")
-#   show_plot_classifiers(datagraphics$methodsacc, "Accuracy Results")
+   datagraphics <- generate_datagraphics(results)
+   #show_plot_classifiers(datagraphics$methodsauc, "AUC Results")
+   show_plot_classifiers(datagraphics$methodsacc, "Accuracy Results")
      
    infores <- load_datasets_info()
    infographics <- generate_infographics(infores)
@@ -44,10 +45,10 @@ load_datasets <- function () {
     if (file.exists(path$resultfile)) {
       datasets[[path$datasetname]] <- read.csv.file(path$resultfile)
       
-      load(path$get_tempfile('TOP3classifiers', '.RData')) #classifiers
+      load(path$get_tempfile('ALLclassifiers', '.RData')) #classifiers
       map <- change_special_chars(rownames(datasets[[path$datasetname]]))
       names(map) <- rownames(datasets[[path$datasetname]])
-      real <- factor(classifiers, levels=c("SVM", "NB", "RF"))
+      real <- factor(classifiers, levels=c("SVM", "NB", "RF", "KNN_3")) # "DT", "KNN_1", "KNN_3", "KNN_5", "KNN_7"))
       
       datasets[[path$datasetname]][,"real"] <- real[map]
       rownames(datasets[[path$datasetname]]) <- paste(path$datasetname, rownames(datasets[[path$datasetname]]), sep='_')
@@ -76,9 +77,9 @@ generate_metabase <- function (results) {
          , "auc", "accuracy", "topauc", "topaccuracy"
          , "ClMean", "Fnd", "SymMin", "NAtrEnt"
          , "Nlbst", "NumRate", "NomRate", "SymMin",	"SymMax",	"SymMean",	"SymSd",	"SymSum"
-         , "Fnd", "AtrEnt"
-         , "Spl", "Dim"
-         , "Atr"
+         #, "Fnd", "AtrEnt"
+         #, "Spl", "Dim"
+         #, "Atr"
          , "NSlbst", "Mfreq", "LCard", "LDen", "Mir", "Scl"
       )]
   colnames(metabase)[ncol(metabase)] <- "class"
@@ -128,9 +129,10 @@ generate_infographics <- function (results) {
 }
 
 generate_datagraphics <- function (results) {
+  methods <- c("SVM", "NB", "RF", "KNN_3") #"DT", "KNN_1", "KNN_3", "KNN_5", "KNN_7")
   dfauc <- matrix(
-    rep(0, (length(names(results))+1) * 3), ncol=3,
-    dimnames=list(c(names(results), c("All")), c("SVM", "NB", "RF"))
+    rep(0, (length(names(results))+1) * length(methods)), ncol=length(methods),
+    dimnames=list(c(names(results), c("All")), methods)
   )
   
   dfacc <- dfauc
@@ -146,7 +148,7 @@ generate_datagraphics <- function (results) {
       
     }
 
-    classifieracc <- table(results[[dsname]][,"topaccuracy"])
+    classifieracc <- table(results[[dsname]][,"real"]) #topaccuracy
     for (methods in names(classifieracc)) {
       #if (methods %in% c("KNN_1", "KNN_3", "KNN_5", "KNN_7")) {
       #  dfacc[dsname, "KNN"] <- dfacc[dsname, "KNN"] + classifieracc[methods]
