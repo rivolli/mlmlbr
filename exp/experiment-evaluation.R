@@ -112,8 +112,8 @@ runningExperimentsEvaluation <- function (traindata, testdata, path) {
   #  lresults[["PRED"]] <- BR.evaluate(testdata, predictions)
   #}
   
-  metric <- "Balanced Accuracy" #"Accuracy"
-  metric <- "Sensitivity"
+  metric <- "Balanced Accuracy" #"Accuracy" "Sensitivity"
+  metric <- "F1"
   #All Better REAL Result in TOP3
   cat (now(), "Running TOP3\n")
   classifiers <- get_betters_classifiers_by_metric(list("SVM"=svm.results, "KNN_3"=lresults[["KNN_3"]], "RF"=rf.results), testdata, metric)
@@ -198,6 +198,11 @@ get_betters_classifiers_by_metric <- function (lresults, testdata, metricname) {
         measures <- confusionMatrix(predicted, real, '1')
         if (metricname %in% names(measures$overall))
           return(measures$overall[metricname])
+        else if (metricname == "F1") {
+          precision <- measures$byClass["Pos Pred Value"]
+          recall <- measures$byClass["Sensitivity"]
+          return((2 * precision * recall) / (precision + recall))
+        }
         else
           return(measures$byClass[metricname])
       })

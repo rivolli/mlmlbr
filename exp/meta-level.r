@@ -1,5 +1,6 @@
 createMetaModel <- function (metabase, train) {
   traindata <- metabase[train,c(getPreditiveAttributes(), "class")]
+  #trainSplit <- SMOTE(class ~ ., traindata, perc.over=300, k=3, perc.under=300)
   model <- randomForest(traindata[,-ncol(traindata)], traindata[,ncol(traindata)])
   
   model
@@ -38,16 +39,26 @@ getMultilabelResults <- function (metaprediction) {
 }
 
 getPreditiveAttributes <- function () {
-  c(
+  c( #Balanced Accuracy
     "Atr", "Dim"
     ,"ClMin", "ClMax", "ClSd"
     ,"Sks", "SksP", "Kts", "KtsP", "AbsC"
     ,"CanC", "ClEnt", "NClEnt", "JEnt", "MutInf", "EAttr", "NoiSig"
-    #,"Lfq", "IRLbl", "LScl"
+    ,"Lfq", "IRLbl", "LScl"
     ,"Nlbst", "NSlbst", "Mfreq", "LCard", "LDen", "Mir", "Scl"
-    #, "AtrEnt", "NAtrEnt"
-    #,"NumRate", "NomRate","SymMin", "SymMax", "SymMean", "SymSd", "SymSum"
+    , "AtrEnt", "NAtrEnt"
+    ,"NumRate", "NomRate","SymMin", "SymMax", "SymMean", "SymSd", "SymSum"
   )
+#   c( #Accuracy
+#     "Atr", "Dim"
+#     ,"ClMin", "ClMax", "ClSd"
+#     ,"Sks", "SksP", "Kts", "KtsP", "AbsC"
+#     ,"CanC", "ClEnt", "NClEnt", "JEnt", "MutInf", "EAttr", "NoiSig"
+#     #,"Lfq", "IRLbl", "LScl"
+#     ,"Nlbst", "NSlbst", "Mfreq", "LCard", "LDen", "Mir", "Scl"
+#     #, "AtrEnt", "NAtrEnt"
+#     #,"NumRate", "NomRate","SymMin", "SymMax", "SymMean", "SymSd", "SymSum"
+#   )
 } 
 
 metaclassifier <- function (metabase, train, test) {

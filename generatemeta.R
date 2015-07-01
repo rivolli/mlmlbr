@@ -33,6 +33,7 @@ generate_meta = function() {
     
     alldata
   }));
+  datasetnames <- unique(metabase[,"datasetname"])
   write.csv(metabase, file='results/000 - metabase.csv')
   
   metabase[,"class"] <- factor(metabase[,"TOP3"])
@@ -73,8 +74,8 @@ generate_meta = function() {
   allresults <- rbind(allresults, total)
   write.csv(allresults, file="meta-learning-metrics.csv")
 
-  cat("Balanced Mean:", paste(paste("\n", names(total)), total, sep=": "), "\n")
-  browser()
+  cat("Mean of metrics:", paste(paste("\n", names(total)), total, sep=": "), "\n")
+
   #Multi-Label results
   mlresults <- do.call("rbind", lapply(predictions, getMultilabelResults))
   total <- apply(mlresults[,mlmetrics], 2, mean)
@@ -82,9 +83,22 @@ generate_meta = function() {
   
   svmresult <- do.call("rbind", svmmlresult)
   total <- apply(svmresult[,mlmetrics], 2, mean)
-  svmresult <- mlresults - rbind(svmresult, total)
+  compsvmresult <- rbind(svmresult, total)
   
-  write.csv(cbind(allresults, mlresults, svmresult), file="meta-learning-metrics.csv")
+  write.csv(cbind(allresults, (mlresults - compsvmresult), compsvmresult), file="meta-learning-metrics.csv")
+  
+  for (measure in mlmetrics) {
+    valid <- wilcoxon(svmresult[datasetnames, measure], mlresults[datasetnames, measure], .95)
+    cat(measure, "SVM:", total[measure], " |  MTL:",mlresults["total", measure], " | Different:", valid,"\n")
+  }
+  #change hamming loss values
+  svmresult[,"HammingLoss"] <- 1 - svmresult[,"HammingLoss"]
+  mlresults[,"HammingLoss"] <- 1 - mlresults[,"HammingLoss"]
+  for (dsname in datasetnames) {
+    valid <- wilcoxon(svmresult[dsname, ], mlresults[dsname, ], .95)
+    cat(dsname, "SVM:", sum(round(svmresult[dsname, ], 2) > round(mlresults[dsname, ], 2)), 
+        " wins |  MTL:", sum(round(mlresults[dsname, ], 2) > round(svmresult[dsname, ], 2)), " wins | Different:", valid,"\n")
+  }
   browser()
   
   cat("\ndone:", now(), "\n")
