@@ -112,7 +112,7 @@ runningExperimentsEvaluation <- function (traindata, testdata, path) {
   #  lresults[["PRED"]] <- BR.evaluate(testdata, predictions)
   #}
   
-  metric <- "Accuracy"
+  metric <- "Balanced Accuracy" #"Accuracy"
   #All Better REAL Result in TOP3
   cat (now(), "Running TOP3\n")
   classifiers <- get_betters_classifiers_by_metric(list("SVM"=svm.results, "KNN_3"=lresults[["KNN_3"]], "RF"=rf.results), testdata, metric)
@@ -162,7 +162,14 @@ get_predictions_from_list <- function (classifiers, lresults, testdata) {
   colnames(predictions) <- rownames(testdata$labels)
   for (classname in rownames(testdata$labels)) {
     if (is.na(classifiers[classname])) {
-      predictions[,classname] <- rep(0, testdata$measures$num.instances)
+      nclass <- change_special_chars(classname)
+      if (is.na(classifiers[nclass])) {
+        cat(" - Warning: Skipping ", classname, "(", nclass, ")\n")
+        predictions[,classname] <- rep(0, testdata$measures$num.instances)
+      }
+      else {
+        predictions[,classname] <- attr(lresults[[classifiers[nclass]]], "predictions")[,nclass]  
+      }
     }
     else {
       predictions[,classname] <- attr(lresults[[classifiers[classname]]], "predictions")[,classname]  
