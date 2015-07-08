@@ -112,7 +112,8 @@ runningExperimentsEvaluation <- function (traindata, testdata, path) {
   #  lresults[["PRED"]] <- BR.evaluate(testdata, predictions)
   #}
   
-  metric <- "Accuracy"
+  metric <- "Balanced Accuracy" #"Accuracy" "Sensitivity"
+  metric <- "F1"
   #All Better REAL Result in TOP3
   cat (now(), "Running TOP3\n")
   classifiers <- get_betters_classifiers_by_metric(list("SVM"=svm.results, "KNN_3"=lresults[["KNN_3"]], "RF"=rf.results), testdata, metric)
@@ -162,7 +163,14 @@ get_predictions_from_list <- function (classifiers, lresults, testdata) {
   colnames(predictions) <- rownames(testdata$labels)
   for (classname in rownames(testdata$labels)) {
     if (is.na(classifiers[classname])) {
-      predictions[,classname] <- rep(0, testdata$measures$num.instances)
+      nclass <- change_special_chars(classname)
+      if (is.na(classifiers[nclass])) {
+        cat(" - Warning: Skipping ", classname, "(", nclass, ")\n")
+        predictions[,classname] <- rep(0, testdata$measures$num.instances)
+      }
+      else {
+        predictions[,classname] <- attr(lresults[[classifiers[nclass]]], "predictions")[,nclass]  
+      }
     }
     else {
       predictions[,classname] <- attr(lresults[[classifiers[classname]]], "predictions")[,classname]  
@@ -190,6 +198,13 @@ get_betters_classifiers_by_metric <- function (lresults, testdata, metricname) {
         measures <- confusionMatrix(predicted, real, '1')
         if (metricname %in% names(measures$overall))
           return(measures$overall[metricname])
+        else if (metricname == "F1") {
+          precision <- measures$byClass["Pos Pred Value"]
+          recall <- measures$byClass["Sensitivity"]
+          if (precision == 0 || recall == 0) return(0)
+          cat(precision, recall, (2 * precision * recall) / (precision + recall),"\n")
+          return((2 * precision * recall) / (precision + recall))
+        }
         else
           return(measures$byClass[metricname])
       })
