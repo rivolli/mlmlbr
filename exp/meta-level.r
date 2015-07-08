@@ -43,9 +43,10 @@ metaclassifier <- function (metabase, train, test) {
 }
 
 getPreditiveAttributes <- function () {
-  c("Atr", "Dim", "ClMin", "ClMax", "ClSd", "Sks", "SksP", "Kts", "KtsP", "AbsC",
+  c("Atr", "Dim", "NumRate", "NomRate", "Sks", "SksP", "Kts", "KtsP", "AbsC",
     "CanC", "ClEnt", "NClEnt", "JEnt", "MutInf", "EAttr", "NoiSig"
-    ,"Lfq", "IRLbl", "LScl"
+    ,"Lfq"
+    #"IRLbl", "LScl"
     #,"LCard", "LDen", "Mir", "Scl"
     #, "AtrEnt", "NAtrEnt"
   )
