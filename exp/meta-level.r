@@ -1,17 +1,54 @@
 createMetaModel <- function (metabase, train) {
-  traindata <- metabase[train,c(getPreditiveAttributes(), "class")]
+  nexample <- round(metabase[,"Spl"] * metabase[,"Lfq"]) > 2
+  traindata <- metabase[train & nexample,c(getPreditiveAttributes(), "class")]
   #trainSplit <- SMOTE(class ~ ., traindata, perc.over=300, k=3, perc.under=300)
-  model <- randomForest(traindata[,-ncol(traindata)], traindata[,ncol(traindata)])
+  #model <- randomForest(traindata[,-ncol(traindata)], traindata[,ncol(traindata)])
   
+  model <- svm(traindata[,-ncol(traindata)], traindata[,ncol(traindata)])
   model
+}
+
+preProccessForMTL <- function (metabase, targetAttribute) {
+  #Atr - Number of attributes
+  metabase[metabase[,"Atr"] < 20, "Atr"] <- 0 #very small < 20
+  metabase[metabase[,"Atr"] >= 20 & metabase[,"Atr"] < 100, "Atr"] <- 1 #small < 100
+  metabase[metabase[,"Atr"] >= 100 & metabase[,"Atr"] < 300, "Atr"] <- 2 #medium < 300
+  metabase[metabase[,"Atr"] >= 300 & metabase[,"Atr"] < 900, "Atr"] <- 3 #large < 900
+  metabase[metabase[,"Atr"] >= 900, "Atr"] <- 4 #large < 900
+
+#   #Change Number of single labelset for the proportion of single labelset 
+#   metabase[,"NSlbst"] = metabase[,"NSlbst"] / metabase[,"Nlbst"]
+#   
+#   #Change the number of labelset multipling it by frequency of positive class
+#   metabase[,"Nlbst1"] = metabase[,"Lfq"] / (1 / metabase[,"Nlbst"])
+#   
+#   #Change the label cardinality for Multipling it by frequency of positive class
+#   metabase[,"LCard1"] = metabase[,"Lfq"] / metabase[,"LCard"]
+#   metabase[,"LDen1"] = metabase[,"Lfq"] / metabase[,"LDen"]
+  
+  #metabase[,getPreditiveAttributes()] <- scale(metabase[,getPreditiveAttributes()])
+  #metabase[,getPreditiveAttributes()] <- normalize(metabase[,getPreditiveAttributes()])
+  metabase[,"class"] <- factor(metabase[,targetAttribute])
+  metabase
 }
 
 getMetaPredictions <- function (model, metabase, test) {
   testdata <- metabase[test,c(getPreditiveAttributes(), "class")]
-  preds <- predict(model, testdata[,-ncol(testdata)])
+  preds <- predict(model, testdata[,-ncol(testdata)], type = 'response')
   measures <- acc.multi.measures(preds, testdata[,ncol(testdata)])
-  reals <- table(testdata[,ncol(testdata)])
-  measures["majority"] <- reals[which.max(reals)] / sum(test)
+  
+  #Ballanced Accuracy
+  res <- confusionMatrix(preds, testdata[,ncol(testdata)])
+  measures["balancedaccuracy"] <- sum(res$byClass[!is.na(res$byClass[,"Balanced Accuracy"]),"Balanced Accuracy"]) / nlevels(testdata[,ncol(testdata)])
+  
+  #AUC
+#   if (unique(testdata[,ncol(testdata)]) == unique(preds))
+#     measures["auc"] <- auc(multiclass.roc(testdata[,ncol(testdata)], as.numeric(preds)), levels=base::levels(testdata[,ncol(testdata)]))
+#   else
+    measures["auc"] <- 0
+  
+  majority <- acc.multi.measures(factor(rep("SVM", nrow(testdata)), levels=levels(testdata[,ncol(testdata)])), testdata[,ncol(testdata)])
+  measures["majority"] <- majority["accuracy"]
   measures["examples"] <- sum(test)
   
   return(list(metrics=measures, predictions=preds))
@@ -39,26 +76,17 @@ getMultilabelResults <- function (metaprediction) {
 }
 
 getPreditiveAttributes <- function () {
-  c( #Balanced Accuracy
+  c( #Accuracy
     "Atr", "Dim"
     ,"ClMin", "ClMax", "ClSd"
     ,"Sks", "SksP", "Kts", "KtsP", "AbsC"
     ,"CanC", "ClEnt", "NClEnt", "JEnt", "MutInf", "EAttr", "NoiSig"
     ,"Lfq", "IRLbl", "LScl"
-    ,"Nlbst", "NSlbst", "Mfreq", "LCard", "LDen", "Mir", "Scl"
-    , "AtrEnt", "NAtrEnt"
+    ,"Nlbst", "NSlbst"
+    ,"LCard", "LDen"
+    ,"AtrEnt", "NAtrEnt"
     ,"NumRate", "NomRate","SymMin", "SymMax", "SymMean", "SymSd", "SymSum"
   )
-#   c( #Accuracy
-#     "Atr", "Dim"
-#     ,"ClMin", "ClMax", "ClSd"
-#     ,"Sks", "SksP", "Kts", "KtsP", "AbsC"
-#     ,"CanC", "ClEnt", "NClEnt", "JEnt", "MutInf", "EAttr", "NoiSig"
-#     #,"Lfq", "IRLbl", "LScl"
-#     ,"Nlbst", "NSlbst", "Mfreq", "LCard", "LDen", "Mir", "Scl"
-#     #, "AtrEnt", "NAtrEnt"
-#     #,"NumRate", "NomRate","SymMin", "SymMax", "SymMean", "SymSd", "SymSum"
-#   )
 } 
 
 metaclassifier <- function (metabase, train, test) {

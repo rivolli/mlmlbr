@@ -9,7 +9,6 @@ setup = function() {
 }
 
 generate_meta = function() {
-  setup();
   mlmetrics <- c("Accuracy", "AUC", "Recall", "Precision", "AveragePrecision", "FMeasure", "HammingLoss", "SubsetAccuracy", "MacroFMeasure", "MicroFMeasure")
   
   #Generate Metabase default
@@ -35,8 +34,9 @@ generate_meta = function() {
   }));
   datasetnames <- unique(metabase[,"datasetname"])
   write.csv(metabase, file='results/000 - metabase.csv')
+  metabase <- preProccessForMTL(metabase, "TOP3")
+  write.csv(metabase[,c(getPreditiveAttributes(), "class")], file='results/001 - metabase.csv')
   
-  metabase[,"class"] <- factor(metabase[,"TOP3"])
   write.table(table(metabase[,"class"]), quote = F, row.names=F, col.names=F)
   cat("\n")
   
@@ -68,14 +68,14 @@ generate_meta = function() {
   allresults <- do.call("rbind", metrics)
   
   cat("\n\n---------------------------------------------------------------------\n")
-  metrics <- c("error", "precision", "recall", "fscore", "accuracy", "majority")
+  metrics <- c("error", "precision", "recall", "fscore", "accuracy", "balancedaccuracy", "auc", "majority")
   total <- apply(allresults[, metrics] * allresults[,"examples"], 2, sum) / sum(allresults[, "examples"])
   total["examples"] <- sum(allresults[, "examples"])
   allresults <- rbind(allresults, total)
   write.csv(allresults, file="meta-learning-metrics.csv")
 
   cat("Mean of metrics:", paste(paste("\n", names(total)), total, sep=": "), "\n")
-
+  browser()
   #Multi-Label results
   mlresults <- do.call("rbind", lapply(predictions, getMultilabelResults))
   total <- apply(mlresults[,mlmetrics], 2, mean)
@@ -86,19 +86,30 @@ generate_meta = function() {
   compsvmresult <- rbind(svmresult, total)
   
   write.csv(cbind(allresults, (mlresults - compsvmresult), compsvmresult), file="meta-learning-metrics.csv")
-  
+
+  statisticalResult <- data.frame(observation=character(), wins=integer(), loss=integer(), svm=numeric(), mtl=numeric(), relevance=logical())
   for (measure in mlmetrics) {
     valid <- wilcoxon(svmresult[datasetnames, measure], mlresults[datasetnames, measure], .95)
+    diffs <- round(mlresults[datasetnames, measure] - svmresult[datasetnames, measure], 2)
+    statisticalResult <- rbind(statisticalResult, 
+      list(observation=as.character(measure), wins=sum(diffs > 0), loss=sum(diffs < 0),
+                svm=total[measure], mtl=mlresults["total", measure], relevance=valid)
+    )
     cat(measure, "SVM:", total[measure], " |  MTL:",mlresults["total", measure], " | Different:", valid,"\n")
   }
+  
   #change hamming loss values
   svmresult[,"HammingLoss"] <- 1 - svmresult[,"HammingLoss"]
   mlresults[,"HammingLoss"] <- 1 - mlresults[,"HammingLoss"]
+  cat("\n")
   for (dsname in datasetnames) {
-    valid <- wilcoxon(svmresult[dsname, ], mlresults[dsname, ], .95)
-    cat(dsname, "SVM:", sum(round(svmresult[dsname, ], 2) > round(mlresults[dsname, ], 2)), 
-        " wins |  MTL:", sum(round(mlresults[dsname, ], 2) > round(svmresult[dsname, ], 2)), " wins | Different:", valid,"\n")
+    valid <- wilcoxon(as.numeric(svmresult[dsname,]), as.numeric(mlresults[dsname,]), .95)
+    diffs <- round(mlresults[dsname,] - svmresult[dsname,], 2)
+    statisticalResult <- rbind(statisticalResult, list(observation=as.character(dsname), wins=sum(diffs > 0), loss=sum(diffs < 0),svm=0, mtl=0, relevance=valid))
+    cat(dsname, "SVM:", sum(diffs < 0), 
+        " wins |  MTL:", sum(diffs > 0), " wins | Different:", valid,"\n")
   }
+  write.csv(statisticalResult, file="meta-learning-statistical.csv")
   browser()
   
   cat("\ndone:", now(), "\n")

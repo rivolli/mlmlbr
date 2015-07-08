@@ -202,7 +202,6 @@ get_betters_classifiers_by_metric <- function (lresults, testdata, metricname) {
           precision <- measures$byClass["Pos Pred Value"]
           recall <- measures$byClass["Sensitivity"]
           if (precision == 0 || recall == 0) return(0)
-          cat(precision, recall, (2 * precision * recall) / (precision + recall),"\n")
           return((2 * precision * recall) / (precision + recall))
         }
         else
