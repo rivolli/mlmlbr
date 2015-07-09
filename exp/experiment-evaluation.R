@@ -91,7 +91,7 @@ runningExperimentsEvaluation <- function (traindata, testdata, path) {
     totals <- matrix(nrow = 10, ncol = 19)
     for (i in 1:10) { 
       #Running 10 times and use the mean of metrics
-      classifiers <- sapply(rownames(testdata$labels), function (j) sample(c("SVM", "RF", "NB"))[1])
+      classifiers <- sapply(rownames(testdata$labels), function (j) sample(c("SVM", "RF", "KNN_3"))[1])
       predictions <- get_predictions_from_list(classifiers, lresults, testdata)
       random.results <- BR.evaluate(testdata, predictions)
       totals[i,] <- mresult.as.vector(random.results)
