@@ -24,16 +24,16 @@ run_metabase <- function () {
   
    datagraphics <- generate_datagraphics(results)
    #show_plot_classifiers(datagraphics$methodsauc, "AUC Results")
-   show_plot_classifiers(datagraphics$methodsacc, "Accuracy Results")
+   show_plot_classifiers(datagraphics$methodsacc, "F1 Measure Results")
      
    infores <- load_datasets_info()
    infographics <- generate_infographics(infores)
    show_plot_infocomparation(infographics)
 
-   for (measure in c("Accuracy", "AUC", "Recall", "Precision", "AveragePrecision", "FMeasure", "HammingLoss", "SubsetAccuracy", "MacroFMeasure", "MicroFMeasure")) {
-     comparative <- matrix(unlist(lapply(infores, function (metrics) metrics[c("SVM", "PRED"),measure])), ncol=2, byrow=T)
-     cat(measure, "SVM:", mean(comparative[,1]), "MTL:", mean(comparative[,2]), wilcoxon(comparative[,1], comparative[,2], .95), "\n")
-   }
+#    for (measure in c("Accuracy", "AUC", "Recall", "Precision", "AveragePrecision", "FMeasure", "HammingLoss", "SubsetAccuracy", "MacroFMeasure", "MicroFMeasure")) {
+#      comparative <- matrix(unlist(lapply(infores, function (metrics) metrics[c("SVM", "PRED"),measure])), ncol=2, byrow=T)
+#      cat(measure, "SVM:", mean(comparative[,1]), "MTL:", mean(comparative[,2]), wilcoxon(comparative[,1], comparative[,2], .95), "\n")
+#    }
 
   TRUE
 }
@@ -108,7 +108,7 @@ load_datasets_info <- function () {
 
 generate_infographics <- function (results) {
   ret <- list()
-  methods <- c("SVM", "TOP3", "ALL") # , "TOP3"
+  methods <- c("SVM", "TOP3") # , "TOP3"
   for (metric in c("Accuracy", "SubsetAccuracy", "HammingLoss", "FMeasure"
                    #, "AUC", "MacroFMeasure", "MicroFMeasure","OneError"
   )) {
@@ -136,7 +136,8 @@ generate_datagraphics <- function (results) {
   
   dfacc <- dfauc
   for (dsname in names(results)) {
-    classifierauc <- table(results[[dsname]][,"topauc"])
+    #classifierauc <- table(results[[dsname]][,"topauc"])
+    classifierauc <- table(results[[dsname]][,"real"])
     for (methods in names(classifierauc)) {
       #if (methods %in% c("KNN_1", "KNN_3", "KNN_5", "KNN_7")) {
       #  dfauc[dsname, "KNN"] <- dfauc[dsname, "KNN"] + classifierauc[methods]
@@ -180,16 +181,19 @@ show_plot_classifiers <- function (data, title) {
   df2$total <- ifelse(df2$total == 0, "", df2$total)
   g <- ggplot(data=df2, aes(x=Var2, y=value, fill=Var2, group=Var2, label=value))
   g <- g + geom_bar(position="dodge", stat="identity") + geom_text()
-  g <- g + facet_wrap(~Var1, scales="free")
-  g <- g + ggtitle(title) + ylab("") + xlab("") + labs(fill="Classifiers")
+  g <- g + facet_wrap(~Var1, scales="free", ncol=3)
+  g <- g + ggtitle(title) + ylab("") + xlab("") + labs(fill="Classifiers") +
+    theme(legend.position="bottom")
   plot(g)
 }
 
 show_plot_infocomparation <- function (datagraphics) {
   for(metric in names(datagraphics)) {
+    colnames(datagraphics[[metric]]) <- c("SVM", "MTL")
     df <- melt(datagraphics[[metric]])
-    g <- ggplot(data=df, aes(x=Var1, y=value, group=Var2, colour=Var2))
-    g <- g + geom_line(aes(linetype=Var2, colour=Var2), size=1)
+    colnames(df) <- c("Dataset", "Method", "Value")
+    g <- ggplot(data=df, aes(x=Dataset, y=Value, group=Method, colour=Method))
+    g <- g + geom_line(aes(linetype=Method, colour=Method), size=1)
     g <- g + geom_point(size=2)
     #g <- g + geom_text(aes(label=value),hjust=0, vjust=0)
     #g <- g + scale_fill_hue(name="Classifiers")

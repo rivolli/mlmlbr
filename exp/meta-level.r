@@ -1,5 +1,6 @@
 createMetaModel <- function (metabase, train) {
-  traindata <- metabase[train,c(getPreditiveAttributes(), "class")]
+  nexample <- metabase[,"LRfq"] > 0
+  traindata <- metabase[train & nexample,c(getPreditiveAttributes(), "class")]
   #trainSplit <- SMOTE(class ~ ., traindata, perc.over=300, k=3, perc.under=300)
   model <- randomForest(traindata[,-ncol(traindata)], traindata[,ncol(traindata)])
   #model <- svm(traindata[,-ncol(traindata)], traindata[,ncol(traindata)])
@@ -7,12 +8,33 @@ createMetaModel <- function (metabase, train) {
   model
 }
 
+preProccessForMTL <- function (metabase, targetAttribute) {
+  #Atr - Number of attributes
+#   metabase[metabase[,"Atr"] < 20, "Atr"] <- 0 #very small < 20
+#   metabase[metabase[,"Atr"] >= 20 & metabase[,"Atr"] < 100, "Atr"] <- 1 #small < 100
+#   metabase[metabase[,"Atr"] >= 100 & metabase[,"Atr"] < 300, "Atr"] <- 2 #medium < 300
+#   metabase[metabase[,"Atr"] >= 300 & metabase[,"Atr"] < 900, "Atr"] <- 3 #large < 900
+#   metabase[metabase[,"Atr"] >= 900, "Atr"] <- 4 #large < 900
+
+  #metabase[,getPreditiveAttributes()] <- scale(metabase[,getPreditiveAttributes()])
+  #metabase[,getPreditiveAttributes()] <- normalize(metabase[,getPreditiveAttributes()])
+  metabase[,"LRfq"] <- round(metabase[,"Lfq"] * metabase[,"Spl"])
+  metabase[,"class"] <- factor(metabase[,targetAttribute])
+  metabase
+}
+
 getMetaPredictions <- function (model, metabase, test) {
   testdata <- metabase[test,c(getPreditiveAttributes(), "class")]
   preds <- predict(model, testdata[,-ncol(testdata)], type="class")
   measures <- acc.multi.measures(preds, testdata[,ncol(testdata)])
-  reals <- table(testdata[,ncol(testdata)])
-  measures["majority"] <- reals[which.max(reals)] / sum(test)
+  
+  majority <- acc.multi.measures(factor(rep("SVM", nrow(testdata)), levels=levels(testdata[,ncol(testdata)])), testdata[,ncol(testdata)])
+  measures["majority"] <- majority["accuracy"]
+  
+  #Ballanced Accuracy
+  res <- confusionMatrix(preds, testdata[,ncol(testdata)])
+  measures["balancedaccuracy"] <- sum(res$byClass[!is.na(res$byClass[,"Balanced Accuracy"]),"Balanced Accuracy"]) / nlevels(testdata[,ncol(testdata)])
+  
   measures["examples"] <- sum(test)
   
   return(list(metrics=measures, predictions=preds))
@@ -45,56 +67,5 @@ getPreditiveAttributes <- function () {
     ,"NumRate", "NomRate","SymMin", "SymMax", "SymMean", "SymSd", "SymSum" 
     ,"Sks", "SksP", "Kts", "KtsP", "AbsC", "AtrEnt"
     ,"CanC", "ClEnt", "NClEnt", "JEnt", "MutInf", "EAttr", "NoiSig"
-    #,"Nb", "Nn"
   )
-} 
-
-metaclassifier <- function (metabase, train, test) {
-  #Decision tree
-  
-  
-#   scaleddata <- cbind(as.data.frame(scale(metabase[,c(getPreditiveAttributes())])), metabase[,"class"])
-#   scaledtrain <- scaleddata[train,]
-#   scaledtest <-  scaleddata[test,]
-  lbl <- ncol(traindata)
-  
-#   model1 <- RWeka::J48(class ~ ., traindata)
-#   preds1 <- predict(model1, testdata[,-lbl])
-#   measu1 <- acc.multi.measures(preds1, testdata[,lbl])
-#   cat(" DT", measu1, "\n")
-  
-  model2 <- randomForest(traindata[,-lbl], traindata[,lbl])
-  preds2 <- predict(model2, testdata[,-lbl])
-  measu2 <- acc.multi.measures(preds2, testdata[,lbl])
-  cat(" RF", measu2, "\n")
-  
-#   model3 <- svm(traindata[,-lbl], traindata[,lbl])
-#   preds3 <- predict(model3, testdata[,-lbl])
-#   measu3 <- acc.multi.measures(preds3, testdata[,lbl])
-#   cat("SVM", measu3, "\n")
-#   
-#   model4 <- naiveBayes(traindata[,-lbl], traindata[,lbl])
-#   preds4 <- predict(model4, testdata[,-lbl])
-#   measu4 <- acc.multi.measures(preds4, testdata[,lbl])
-#   cat(" NB", measu4, "\n")
-#   
-#   preds5 <- knn(scaledtrain[,-lbl], scaledtest[,-lbl], scaledtrain[,lbl], 5)
-#   measu5 <- acc.multi.measures(preds5, scaledtest[,lbl])
-#   cat("KNN", measu5, "\n")
-  
-#   allpreds <- cbind(
-#     as.character(preds1), #DT
-#     as.character(preds2), #RF
-#     as.character(preds3), #SVM
-#     as.character(preds4), #NB
-#     as.character(preds5)  #KNN
-#   )
-#   preds0 <- factor(apply(allpreds, 1, function (row) names(which.max(table(row)))), levels=unique(metabase[,"class"]))
-#   measu0 <- acc.multi.measures(preds0, testdata[,lbl])
-#   cat("ENS", measu0, "\n")
-#   
-#   return (list(
-#     metrics=list(DT=measu1, RF=measu2, SVM=measu3, NB=measu4, KNN=measu5, ENS=measu0),
-#     prediciton=list(DT=preds1, RF=preds2, SVM=preds3, NB=preds4, KNN=preds5, ENS=preds0)
-#   ))
 }
