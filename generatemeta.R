@@ -9,7 +9,9 @@ setup = function() {
 
 generate_meta = function() {
   setup()
-  mlmetrics <- c("Accuracy", "Recall", "Precision", "AveragePrecision", "FMeasure", "HammingLoss", "SubsetAccuracy", "MacroFMeasure", "MicroFMeasure")
+  mlmetrics <- c("Accuracy", "SubsetAccuracy", "HammingLoss", "FMeasure", "Precision", "Recall", 
+                 "MacroAUC", "MacroFMeasure", "MacroPrecision", "MacroRecall",
+                 "MicroAUC",	"MicroFMeasure", "MicroPrecision", "MicroRecall")
   
   #Generate Metabase default
   metabase <- do.call("rbind", lapply(FILES, function(file) {
@@ -57,27 +59,32 @@ generate_meta = function() {
     validation <- metabase[,"datasetname"] == pathValidation$datasetname
     train <- !test & !validation
     
-    metaModel <- createMetaModel(metabase, train);
-    res <- getMetaPredictions(metaModel, metabase, validation)
-    metrics[[pathValidation$datasetname]] <- res[["metrics"]]
-    predictions[[pathValidation$datasetname]] <- res[["predictions"]]
-    attr(predictions[[pathValidation$datasetname]], "path") <- pathValidation
+    #Set if run with test or validation
+    path <- pathTest
+    rows <- test
     
-    svmmlresult[[pathValidation$datasetname]] <- read.csv.file(pathValidation$datasetinfo)["SVM", mlmetrics]
+    metaModel <- createMetaModel(metabase, train);
+    res <- getMetaPredictions(metaModel, metabase, rows)
+    metrics[[path$datasetname]] <- res[["metrics"]]
+    predictions[[path$datasetname]] <- res[["predictions"]]
+    attr(predictions[[path$datasetname]], "path") <- path
+    
+    svmmlresult[[path$datasetname]] <- read.csv.file(path$datasetinfo)["SVM", mlmetrics]
   }
   allresults <- do.call("rbind", metrics)
   
   cat("\n\n---------------------------------------------------------------------\n")
-  metrics <- c("error", "precision", "recall", "fscore", "accuracy", "majority", "balancedaccuracy")
+  metrics <- c("error", "precision", "recall", "fscore", "accuracy", "majority", "majorityf")
   total <- apply(allresults[, metrics] * allresults[,"examples"], 2, sum) / sum(allresults[, "examples"])
   total["examples"] <- sum(allresults[, "examples"])
   allresults <- rbind(allresults, total)
-  write.csv(allresults, file="meta-learning-metrics.csv")
+  write.csv(round(allresults,3), file="meta-learning-metrics.csv")
   
   metabase[,"predictions"] <- unlist(lapply(predictions, function (preds) preds))
-  print(allresults)
+  print(round(allresults,3))
   cat("Mean of metrics:", paste(paste("\n", names(total)), total, sep=": "), "\n")
   browser()
+  
   #Multi-Label results
   mlresults <- do.call("rbind", lapply(predictions, getMultilabelResults))
   total <- apply(mlresults[,mlmetrics], 2, mean)

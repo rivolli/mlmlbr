@@ -30,6 +30,7 @@ getMetaPredictions <- function (model, metabase, test) {
   
   majority <- acc.multi.measures(factor(rep("SVM", nrow(testdata)), levels=levels(testdata[,ncol(testdata)])), testdata[,ncol(testdata)])
   measures["majority"] <- majority["accuracy"]
+  measures["majorityf"] <- majority["fscore"]
   
   #Ballanced Accuracy
   res <- confusionMatrix(preds, testdata[,ncol(testdata)])

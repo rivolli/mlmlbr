@@ -114,7 +114,7 @@ runningExperimentsEvaluation <- function (traindata, testdata, path) {
   
   metric <- "Balanced Accuracy" #"Accuracy" "Sensitivity"
   metric <- "F1"
-  metric <- "Accuracy"
+  #metric <- "Accuracy"
   #All Better REAL Result in TOP3
   cat (now(), "Running TOP3\n")
   classifiers <- get_betters_classifiers_by_metric(list("SVM"=svm.results, "KNN_3"=lresults[["KNN_3"]], "RF"=rf.results), testdata, metric)
