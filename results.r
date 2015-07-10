@@ -49,6 +49,7 @@ do.results <- function () {
   ranking.pos <- list()
   ranking.val <- list()
   ranking.stats <- list()
+  cat("Statistical results:\n")
   for (metric in mlmetrics) {
     ranking.pos[[metric]] <- matrix(nrow=length(datasets), ncol=length(allmethods), dimnames=list(datasets, allmethods))
     ranking.val[[metric]] <- matrix(nrow=length(datasets), ncol=length(allmethods), dimnames=list(datasets, allmethods))
@@ -67,10 +68,12 @@ do.results <- function () {
         ranking.stats[[metric]][f, method] <- wilcoxon(ranking.val[[metric]][,f], ranking.val[[metric]][,method], .95)        
       }
     }
+    valids <- names(which(apply(ranking.stats[[metric]], 1, sum) == length(methods)))
+    cat("_ ", metric, "_", valids, "\n")
   }
-  browser()
-  comp.ranking <- do.call(rbind, lapply(ranking.val, function (table){
-    round(apply(table, 2, mean), 1)
+  
+  comp.ranking <- do.call(rbind, lapply(ranking.pos, function (table) {
+    apply(table, 2, function (col) sum(col == 1))
   }))
   
   comp.meansd <- do.call(rbind, lapply(rmetrics, function (table) {
